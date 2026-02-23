@@ -1,0 +1,400 @@
+{
+    "Features": {
+        "VDB History Persistence": {
+            "description": "Full local storage persistence for organism history and simulation state.",
+            "how": "Serialized JSON storage in localStorage with versioned keys and recovery logic.",
+            "why": "Ensures user progress and evolutionary data are not lost between sessions."
+        },
+        "Genetic Dominance System": {
+            "description": "Two-allele inheritance system with expressed physical traits based on dominance weights.",
+            "how": "Each trait has two values (d1, d2). The stronger weight determines the expressed value in the simulation.",
+            "why": "Simulates Mendelian inheritance patterns for more complex evolutionary outcomes."
+        },
+        "Evolutionary Linguistic Engine": {
+            "description": "Phonetic Markov-Chain Generator with Hybrid Heredity and Nobility Systems.",
+            "how": "Weighted syllable construction, 50/50 surname inheritance, and Roman numeral lineages with nobility overrides.",
+            "why": "Provides immersive, biologically-grounded naming and lineage tracking for entities."
+        },
+        "Compact Glassmorphic UI": {
+            "description": "Density-optimized inspector and registry HUDs with glassmorphic styling and Turtle theme integration.",
+            "how": "CSS backdrop-filters, absolute positioning with deconfliction, and a curated HSL color palette.",
+            "why": "Maximizes screen real estate while providing a premium, non-intrusive metadata display."
+        },
+        "Performance Optimization Layer": {
+            "description": "O(1) indexing for lineage and family counts with debounced persistence.",
+            "how": "Map-based lookups for genealogical queries and throttled React state updates.",
+            "why": "Maintains 60FPS simulation speed even at high entity counts (150+)."
+        },
+        "Spatial Hash Grid Engine": {
+            "description": "O(N) spatial partitioning for high-speed proximity lookups.",
+            "how": "Grid-based bucketing of entity positions for efficient neighborhood sensing.",
+            "why": "Eliminates O(N^2) bottlenecks in collision and sensing logic."
+        },
+        "Procedural WorldGen Engine": {
+            "description": "Noise-based terrain generation with biomes and collidable cliffs.",
+            "how": "Perlin/FBM noise sampling for terrain height and biome distribution in SimulationEngine.",
+            "why": "Creates more varied and challenging environments compared to flat, wrapped maps."
+        },
+        "High-Performance Aesthetic Texturing": {
+            "description": "Multi-layer canvas rendering system with offscreen caching for textures.",
+            "how": "Pre-rendering biome textures to secondary canvases and tiling them in the main draw loop.",
+            "why": "Achieves high visual fidelity without sacrificing rendering performance."
+        },
+        "Chronos Layer Time System": {
+            "description": "Standardized temporal engine where 30s = 24h Day.",
+            "how": "Centralized time counter in SimulationEngine that maps seconds to game-hours and seasons.",
+            "why": "Provides a predictable pace for the simulation and environmental cycles."
+        },
+        "Metric Unit Standardization": {
+            "description": "Physical traits calibrated to real-world units (m/s, Degrees, Days).",
+            "how": "Scaling factors (UNIT_UTILS) applied to internal simulation values for human-readable display.",
+            "why": "Makes simulation data intuitive and scientifically grounded for the user."
+        },
+        "High-Fidelity Metabolism": {
+            "description": "Energy consumption based on (Metabolism * Speed * Size).",
+            "how": "Calculates energy drain per tick using trait-expressed values and baseline efficiency.",
+            "why": "Balancing mechanic that rewards efficiency and penalizes excessive size/speed."
+        },
+        "Resolution-Independent GUI Scaling": {
+            "description": "Fixed-ratio scaling system that counteracts browser/PC zoom.",
+            "how": "Neutralization factor (1/devicePixelRatio) and CSS transform-scale wrapper in App.tsx.",
+            "why": "Ensures UI proportions and legibility remain constant across all display setups."
+        },
+        "Aesthetic Overhaul (Turtle Theme)": {
+            "description": "Professional UI transition to EB Garamond and 'Turtle' color palette.",
+            "how": "Global CSS variables, lithographic text classes, and 50% padding reduction.",
+            "why": "Creates a cohesive, premium visual identity for the simulation registry."
+        },
+        "Autoscale Logic Toggle": {
+            "description": "On-by-default switch that toggles the resolution-independent scaling (neutralization) logic. Adjusted to target Chrome's standard text size.",
+            "how": "Uses devicePixelRatio as the base multiplier while neutralizing zoom to achieve 1.0 CSS scale (Standard Readability) reliably.",
+            "why": "Ensures the UI matches user expectations of font size while maintaining fixed-ratio consistency across all resolutions."
+        },
+        "Event Log Interaction Fix": {
+            "description": "Corrects the coordinate transform logic for jumping the camera to events.",
+            "how": "Corrected the offset calculation math to center world coordinates on the screen at a fixed zoom level (1.5x).",
+            "why": "Ensures that clicking a biosphere log entry pans precisely to the event location rather than empty space."
+        },
+        "Extended Time System (60s=1h)": {
+            "description": "Deeper simulation time scale where 1 real second equals 1 game minute.",
+            "how": "Modified SIM_CONSTANTS and engine update logic to support slowed progression and 3-line format.",
+            "why": "Enhances observability and realism by slowing down the life cycle for more granular tracking."
+        },
+        "Advanced UI Dashboard": {
+            "description": "Repositioned and interactive dashboards with collapse/expand capabilities.",
+            "how": "Docked Apex Genomes under Chronos Layer, added sortable filtering, and implemented persistence logic.",
+            "why": "Optimizes screen real estate and provides intuitive navigation of population data."
+        },
+        "Movable Interaction Layer": {
+            "description": "Draggable and deconflicting Fauna inspection panels.",
+            "how": "Implement pointer tracking and snapping logic for inspectors.",
+            "why": "Allows users to customize their workspace and track multiple areas of interest without overlap."
+        },
+        "UI Spacing & Log Refinement": {
+            "description": "Density-optimized HUDs with responsive log width and matched padding.",
+            "how": "Unified spacing logic (px-3 py-2) and viewport-based width constraints for notification containers.",
+            "why": "Ensures visual consistency across all UI components while maximizing readability of simulation events."
+        },
+        "Sensory Juice Hierarchy": {
+            "description": "Professional sensory feedback system including Proximate Feedback, Kineticism, and Polysensory Redundancy.",
+            "how": "Implemented via CSS cubic-bezier transitions, active-state scaling, and redundant visual indicators (selection rings + alerts).",
+            "why": "Increases user immersion and 'game feel' by providing high-fidelity physical responses to every interaction."
+        },
+        "Dynamic Lineage Hub (Inspector v2)": {
+            "description": "High-density Fauna inspector with interactive relatives popover and genetic trait expansion.",
+            "how": "Uses hover-states for popover reveals, CSS grid for trait cards, and emoji-mapped neural journals with temporal timestamps.",
+            "why": "Centralizes complex genetic and familial data into a highly readable, compact interface."
+        },
+        "Global Fluid Scaling Integration": {
+            "description": "Centralized, resolution-independent UI system using GlobalSpacing.css with fluid rem-relative tokens (clamp-based) and utility classes.",
+            "how": "Consolidated all spacing, layout, and interactive logic into a single CSS file. Replaced hardcoded Tailwind classes and local style blocks across all components (App, Inspector, Registry, Visualizer) with fluid utility classes (e.g., fluid-p-sm, fluid-gap-xs). Tied 1rem to 12px for high-res consistency and implemented an autoscale toggle for viewport-based clamping.",
+            "why": "To eliminate visual technical debt, ensure absolute consistency across all display resolutions, and provide a single source of truth for GUI aesthetics. This architecture enables predictable UI scaling without manual intervention for different screen sizes."
+        },
+        "Modular GUI Architecture": {
+            "description": "Deconflicted, synchronized UI layer where logic and presentation are strictly separated via centralized spacing utilities.",
+            "how": "Extracted all local CSS and hardcoded Tailwind spacing into GlobalSpacing.css. Components now consume semantic tokens rather than ad-hoc values. Standardized on fluid-rounded-md for layout and juice-interactive for feedback.",
+            "why": "To increase maintainability and allow for rapid aesthetic re-skinning without touching component logic. Ensures the 'Wow' factor remains consistent as new features are added."
+        },
+        "⭐ SDF Procedural Rendering Engine": {
+            "description": "GPU-accelerated WebGL pipeline using Signed Distance Fields (SDF) for organic, high-performance entity rendering.",
+            "how": "Refactored SimulationCanvas to a single-pass fullscreen quad shader. Implemented sdCapsule for skeletal bodies, metaball blending via smin, and data-texture uniforms for 1000+ entity state updates. Supports dynamic wobbles, Fresnel highlights, and Distance Field Auras.",
+            "why": "Enables 10x population density (1000+ entities) while achieving a 'juicy jelly' aesthetic that is physically impossible with 2D Canvas methods. Moves geometric complexity to the GPU."
+        },
+        "Juicy Selection & Camera Follow": {
+            "description": "High-fidelity Fauna interaction system with hover indicators, interactive selection rings, and cinematic camera tracking.",
+            "how": "Shader-based hover indicators in SDFRenderer triggered by mouse-over. Double-click logic in SimulationCanvas for smooth camera interpolation toward followed targets.",
+            "why": "Significantly improves the 'game feel' and usability by making it easier to track and inspect moving Faunas."
+        },
+        "Selection Juice & Tailwind Removal": {
+            "description": "Clean-room UI implementation using a standalone modular CSS system, removing external dependencies like Tailwind CDN.",
+            "how": "Refactored all React components to use GlobalSpacing.css fluid tokens and utility classes. Stripped cdn.tailwindcss.com script and standardized on a internal source-of-truth for aesthetics.",
+            "why": "Eliminates production warnings, improves load times, and ensures complete control over the visual style without external bloat."
+        },
+        "Cinematic Camera Follow": {
+            "description": "Smooth camera interpolation system for tracking moving entities.",
+            "how": "Implemented via double-click detection in SimulationCanvas and lerp-based position updates in the rendering loop.",
+            "why": "Enhances observability and user engagement by allowing seamless tracking of specific Faunas."
+        },
+        "Juiced Selection Logic v2": {
+            "description": "High-precision coordinate alignment and animated targeting UI logic.",
+            "how": "Solved Y-axis flip between browser and WebGL space in SDF fragment shader. Implemented procedural animated targeting rings, corner brackets, and follow-mode compass needles.",
+            "why": "Ensures pixel-perfect selection accuracy while providing professional-grade visual feedback for interactions."
+        },
+        "Vision-to-Grid Parity": {
+            "description": "Strict 1-to-1 mapping between genetic vision traits (meters) and visual grid representation.",
+            "how": "Calibrated UNIT_UTILS.mToPx and shader texture sampling. Fixed a logical bottleneck in the fragment shader's early-exit culling and expanded the Canvas viewport margin to 400px to prevent clipping of 13m+ vision cones.",
+            "why": "Maintains scientific realism and prevents user confusion between data and visuals."
+        },
+        "Metric Speed Synchronization": {
+            "description": "Accurate physical movement based on m/s DNA traits.",
+            "how": "Synchronized internal velocity vectors with PIXELS_PER_METER to ensure [2.8, 3.2] m/s traits result in correct world-space coverage per game-second.",
+            "why": "Ensures that creature mobility is predictable and matches evolutionary balancing."
+        },
+        "High-DPI Coordinate Parity": {
+            "description": "Pixel-perfect synchronization between logical mouse input and physical WebGL rendering across all display densities.",
+            "how": "Implemented window.devicePixelRatio aware viewport logic. Decoupled physical drawing resolution from logical simulation coordinates via u_logicalResolution in the shader. Fixed terrain UV flip (0=Top) to align visual map with physics engine.",
+            "why": "Eliminates selection offsets and visual artifacts on High-Res (Mac/Windows Scaling) displays. Ensures intuitive, lag-free interaction mapping."
+        },
+        "Hyper-Performance SDF Optimization": {
+            "description": "High-efficiency Sparse SDF rendering pipeline capable of uncapped entity counts.",
+            "how": "Shifted expensive indicator logic (atan, pulses) to O(1) pass. Migrated Flora system to data textures. Implemented **Sparse SDF Field** logic using distance-based branching early-exits in fragment loops. The GPU now skips expensive SD math and extra texture fetches for any entity not immediately influencing the current pixel.",
+            "why": "Ensures fluid 60FPS performance even when fully zoomed out with thousands of entities on screen, transforming O(N*Pixels) complexity into a localized sparse calculation."
+        },
+        "Dynamic Detail DOF Rendering": {
+            "description": "Automatic Level of Detail (LOD) and Depth of Field (DOF) system.",
+            "how": "Implemented 3-stage LOD switching based on `u_zoom`. High zoom uses detailed capsules/eyes; Medium zoom disables eyes; Low zoom (wide overview) switches to simplified circle geometry. Added a visual **Depth of Field** soften effect that increases with distance (zoom-out) to hide LOD transitions and provide a cinematic aesthetic.",
+            "why": "Unlocks ultra-high performance by skipping complex geometry when it is too small to see, while maintaining a premium visual style through professional software-simulated lens blur."
+        },
+        "Selective Mating Fusion & Physical Bonding": {
+            "description": "Dynamic metaball fusion and physical lock-on phase for reproduction.",
+            "how": "Modified the SDF fragment shader to utilize a conditional 'smin' (k=0.01 for roaming, k=14 for mating). Implemented a 120-frame 'mating phase' in the engine where partners are physically attracted to each other and their velocities are averaged to 'stick' together. Added a visual pulsing heart indicator and aura during the phase.",
+            "why": "Enhances visual clarity by keeping distinct entities crisp during normal roaming while providing a juicy, tactile feedback for the important biological event of mating."
+        },
+        "Modular Data-Driven Architecture": {
+            "description": "Clean separation of technical domains (Core, Evolution, Entities, Rendering, Data).",
+            "how": "Reorganized the flat simulation directory into a structured `src` hierarchy. Introduced `Fauna` base class for shared logic, `Flora.ts` for resource handling, and `LOD` rendering pipelines. Decoupled physics (Core) from visual manifestation (Rendering).",
+            "why": "Enables independent scaling of features, reduces technical debt, and allows for 'pluggable' species and rendering styles without modifying the simulation core."
+        },
+        "Infinite Biosphere Architecture": {
+            "description": "Uncapped population and Flora regeneration system.",
+            "how": "Removed all hard constants (MAX_POPULATION, MAX_Flora) and culling algorithms. Reproduction and Flora spawning are now governed purely by environmental rates and energy availability, allowing for natural, unlimited progression of the simulation without artificial 'culling' interference, fully utilizing the optimized rendering backend."
+        },
+        "Static Terrain Collision Architecture": {
+            "description": "O(1) physics-terrain collision detection system.",
+            "how": "Replaced real-time noise-based collision checks with a precomputed 512x512 bitmask collision grid in TerrainManager.ts. Physics checks now involve a single array lookup instead of multiple Fractal Brownian Motion (FBM) noise octaves.",
+            "why": "Drastically reduces CPU overhead per Fauna per frame, allowing the simulation to scale to 9500+ entities without CPU main-thread blocking."
+        },
+        "Standardized Unit Architecture": {
+            "description": "Comprehensive spatial and temporal standardization (1 Meter = 20 Pixels, 60s Day).",
+            "how": "Consolidated all world, time, and biological constants into `src/core/Constants.ts`. Implemented meter-centric coordinate transforms and centimeter-base biological scaling. Units are interlinked (M -> CM -> Px) for absolute precision.",
+            "why": "Ensures the simulation is mathematically grounded and easier to balance. Removes arbitrary scaling confusion."
+        },
+        "Persistent Diagnostic Overlay": {
+            "description": "High-fidelity debug HUD for real-time biosphere diagnostics.",
+            "how": "Implemented `DebugDropdown.tsx` with red-tinted glassmorphic HUD. Utilizes `localStorage` for cross-session toggle persistence. Integrated shader-based vision cones and 1-meter grid overlays for visual inspection.",
+            "why": "Empowers the user with scientific visibility into the simulation's sensory and spatial state without permanent UI clutter."
+        },
+        "Scale Consistency & Metabolic Re-balancing": {
+            "description": "Corrected organism rendering and energy logic for metric units.",
+            "how": "Fixed the CM-to-Pixel conversion in `WebGLRenderer.ts` and normalized `AppearanceMapper` multipliers. Re-balanced `BIOLOGICAL_CONSTANTS` (initial energy, thresholds) by 5x to align with the new 50cm size scale.",
+            "why": "Ensures Faunas are visually correct (relative to the grid) and that the ecosystem remains stable under the new unit system."
+        },
+        "Metric Spaced Temporal Synchronization": {
+            "description": "Standardized all distances to meters and time to days/years where 30s = 1 Day.",
+            "how": "Unified Constants.ts to use PIXELS_PER_METER = 20 and SECONDS_PER_DAY = 30. All internal calculations moved to metric base.",
+            "why": "Ensures universal consistency across physics, vision, and growth mechanics."
+        },
+        "Juicy Fauna Kinematics": {
+            "description": "Dynamic body movement based on velocity and desynchronized animations.",
+            "how": "Implemented velocity-driven bending and phase-shifted wobble in WebGLRenderer.ts.",
+            "why": "Improves organic 'feel' of creatures by making them reactive to their own movement."
+        },
+        "⭐ Metric Temporal Calibrator": {
+            "description": "Universal unit and time synchronization engine linking physics, genetics, and rendering.",
+            "how": "Consolidated all multipliers in Constants.ts; Throttled App update loop to SIM_CONSTANTS.FPS; Normalized u_time in shaders to real-seconds; Standardized memory and age calculations to FRAMES_PER_DAY.",
+            "why": "Eliminates 'super speed' artifacts on high-refresh monitors and ensures human-readable biological data (m, cm, m/s, days) is scientifically accurate across all UI components."
+        },
+        "Juicy Organic Flora": {
+            "description": "Procedural botanical rendering with dynamic swaying, tapering arms, and inner-glow juice.",
+            "how": "SDF-based cell subdivision in WebGLRenderer.ts with phase-shifted sin/cos swaying and growth-weighted tapering logic.",
+            "why": "Creates a lush, living environment that responds to time and feels deeply organic."
+        },
+        "Hourly Growth Optimization": {
+            "description": "High-performance ecological update loop using hourly ticks.",
+            "how": "Spreading and density logic throttled to 1/1800th frequency in SimulationEngine.ts while maintaining per-frame visual updates.",
+            "why": "Maintains simulation complexity and density without taxing the CPU main thread unnecessarily."
+        },
+        "Standardized Chronos 30s": {
+            "description": "Predictable temporal mapping where 30 seconds equals one full game day.",
+            "how": "Unified SECONDS_PER_DAY constant and frame-ratio mapping across engine and UI.",
+            "why": "Provides a snappier, more engaging progression suitable for rapid evolutionary observation."
+        },
+        "Consolidated Species Distribution": {
+            "description": "Clean-room organizational structure for different species within the Entities directory.",
+            "how": "Migrated Flora/Fauna logic, base classes, and DNA profiles into deeply nested subdirectories (src/entities/Fauna, src/entities/Flora). Sibling scripts handle specific species behavior.",
+            "why": "Enables truly unlimited species expansion without cluttering the core simulation loop or rendering logic."
+        },
+        "Accurate Vision Cones (Metric)": {
+            "description": "Mathematically correct sensory detection based on FOV and meter-based distances.",
+            "how": "Calculates vision dot products (acos) against FOV in Agent think() loops and renders matching indicator-cones in WebGL via unified u_metersToPixels uniforms.",
+            "why": "Aligns the creature's 'intelligence' with its visual representation, providing a scientific basis for behavior."
+        },
+        "High-Contrast Eye Shaders": {
+            "description": "Naturalistic rendering of entity oculars via SDF layering.",
+            "how": "Split eye rendering into three distinct zones (clamped dark pupil, pure white sclera, and exponential catchlight) within the fragment shader.",
+            "why": "Increases entity character and visual clarity, making creatures feel alive rather than like animated capsules."
+        },
+        "Universal DNA Consolidation": {
+            "description": "Species-specific genetic profiles governing all physical and reproductive traits.",
+            "how": "Extracted all hardcoded constants into Species-specific DNAProfile.ts files. Centralized mutation and expression logic to pull from these manifests.",
+            "why": "Allows for precise balance adjustments for each species independently while maintaining a dry, modular codebase."
+        },
+        "Genetic Interlinking (Flora)": {
+            "description": "Biological trade-off system where physical traits possess conflicting priorities.",
+            "how": "Modified Flora.ts to calculate a 'Mass' factor based on leaf size, stem thickness, and complexity. This Mass value applies a penalty to growth speed while simultaneously increasing nutrient potential.",
+            "why": "Creates an emergent ecosystem where plants must evolve either as fast-growing weeds or slow-growing, energy-dense trees."
+        },
+        "Seasonal Growth Calibration v2": {
+            "description": "Unified growth mapping where 100% ratio = 1 Season to maturity (5% per day).",
+            "how": "Calculates frameSpeed by mapping seasonal growth traits directly to SIM_CONSTANTS.FRAMES_PER_SEASON.",
+            "why": "Ensures flora progression is intuitive and synchronized with the environmental calendar."
+        },
+        "Flora Inspection System": {
+            "description": "Interactive support for selecting and inspecting botanical organisms via the Entity Inspector.",
+            "how": "Refactored UI components (App, EntityInspector) to use 'EntityData' unions. Implemented proximity-based flora discovery in SimulationCanvas.",
+            "why": "Provides complete transparency into the simulation's flora ecosystem and its genetic makeup."
+        },
+        "Botanical Interaction Aura": {
+            "description": "Nature-themed visual indicators for hovered and selected Flora.",
+            "how": "Implemented a pulsing hexagonal SDF aura in the WebGL fragment shader, triggered by unique flora IDs packed in data textures.",
+            "why": "Creates a visually distinct feedback loop for botany that is clearly differentiated from fauna interaction."
+        },
+        "Ecological Balance Knob": {
+            "description": "Centralized scaling factor for species-wide nutrient yields.",
+            "how": "Implemented BASE_NUTRIENT_MIN in DNAProfile as the singular originating multiplier for raw energy expression.",
+            "why": "Allows for rapid, precise calibration of the world's energy supply to ensure fauna population stability."
+        },
+        "Humanized Botanical Interface": {
+            "description": "Refined Flora inspection panel using natural, unabbreviated language and detailed tooltips.",
+            "how": "Replaced technical abbreviations (NRG, kts, x) with 'Energy', 'Segments', and 'Surface Area'. Integrated descriptive Tooltip components for every genetic trait.",
+            "why": "Ensures the UI is intuitive for non-technical users while providing deep biological context for simulate entities."
+        },
+        "Centralized Ecological Logic": {
+            "description": "Foundational biological and environmental constants consolidated into a single manifest.",
+            "how": "Migrated growth modifiers, nutrient scalars, and mass penalties from local logic files to src/core/Constants.ts.",
+            "why": "Provides a singular 'Control Room' for balancing the global ecosystem without chasing values through multiple files."
+        },
+        "Cognitive Debugging Engine": {
+            "description": "Comprehensive sensory and cognitive debugging system with real-time visual overlays.",
+            "how": "Implemented master toggle and granular switches for Vision, Hearing, and Communication in DebugDropdown.tsx. Updated WebGLRenderer.ts to pack sensory ranges into entity textures and render distinct colored rings (Cyan for Hearing, Yellow for Communication) using the fragment shader.",
+            "why": "Provides necessary visual feedback for verifying the new complex cognitive behaviors and sensory ranges of Fauna."
+        },
+        "Chronos Clock Visualization": {
+            "description": "Radial 24-segment clock in the Chronos Layer depicting day progression.",
+            "how": "SVG line segments rotated 15 degrees in a 100x100 viewBox, lit based on current hour.",
+            "why": "Provides intuitive visual feedback for simulation time and day/night cycles."
+        },
+        "Established Ecosystem Spawning": {
+            "description": "Environment seeding with mature plants at simulation start.",
+            "how": "Modified spawnFlora to accept an initialGrowth parameter, passed randomly (0.4-0.9) during initialization.",
+            "why": "Simulates a persistent world that existed before the organisms arrived."
+        },
+        "Arrival Steering Logic": {
+            "description": "Adaptive deceleration as entities approach their target positions.",
+            "how": "Modified Brain.ts to scale desired velocity based on distance within a 'slowRadius' (2x size).",
+            "why": "Eliminates rapid 180-degree oscillations when creatures are on top of food."
+        },
+        "Memory-to-Object Target Resolution": {
+            "description": "Real-time linking of memory coordinates to live world objects.",
+            "how": "Brain logic finds visible flora matching the memory location (<20px) and locks the 'eatTarget' to the live object.",
+            "why": "Ensures reliable pathing-to-eating transition even when target was initially known only by memory."
+        },
+        "Broken Memory Pruning": {
+            "description": "Failsafe to clear stale memories if a location is reached but the target is absent.",
+            "how": "Conditional check in Brain.ts: if arrived at memory location but no live object found, return a random wander force to break the loop.",
+            "why": "Prevents creatures from stalling indefinitely at the ruins of a past meal."
+        },
+        "World Seed Persistence": {
+            "description": "Standardized map regeneration using a shared terrain seed.",
+            "how": "Stores a 64-bit random seed in SimulationState and passes it to TerrainManager on init and reload.",
+            "why": "Ensures map geometry (cliffs, biomes) stays permanent between browser refreshes."
+        },
+        "Safe Botanical Spawning": {
+            "description": "Collision-aware flora generation system.",
+            "how": "Modified spawnFlora to check the TerrainManager collision grid, preventing food from spawning in unreachable cliff areas.",
+            "why": "Eliminates pathing bottlenecks where creatures get stuck trying to reach food behind impassable barriers."
+        },
+        "Stuck Prevention Impulse": {
+            "description": "Dynamic recovery mechanism for stationary entities.",
+            "how": "Monitors animal speed; if velocity is < 0.05, injects a random steering impulse in Brain.ts.",
+            "why": "Ensures creatures don't get trapped in corners or stagnant noise zones."
+        },
+        "Storage Management & Quota Recovery": {
+            "description": "Byte-aware and non-recursive storage persistence system.",
+            "how": "Implements controlled pruning of history to free space for critical simulation state. Replaces recursive save calls with a loop-based recovery to prevent stack overflows.",
+            "why": "Prevents application crashes (Maximum call stack size exceeded) and data loss (QuotaExceededError) when browser storage limits are reached."
+        },
+        "Bioluminescent VFX & Modular Rendering": {
+            "description": "Saturation-preserving glow system and modular rendering profiles for organisms.",
+            "how": "Refactored fragment shaders to use non-washing additive blending and implemented appearanceType-based logic in the rendering pipeline.",
+            "why": "Fixes 'white-washed' visuals and enables future species-specific visual environments and debugging hooks."
+        },
+        "Strict Bio-Communication & Neural Stacking": {
+            "description": "Range-limited communication with greeting validation, cooldowns, and memory stacking.",
+            "how": "Enforces Vocalization vs Hearing range checks in Brain.ts. Implemented 5s interaction cooldowns and a uniqueness check to prevent redundant data sharing. Memories stack (x#) and auto-pin high-volume entries to the top of the neural log.",
+            "why": "Reduces population-wide computational overhead (Database I/O) and ensures social interactions are biologically realistic and efficient."
+        },
+        "Refined Neuro-Lexicon & Perception Throttling": {
+            "description": "Advanced ideographic memory syntax with multi-entity grouping and frequency-capped perception logging.",
+            "how": "Implemented a 60-frame perception cooldown in Brain.ts, grouped familiar entities in MemorySystem.ts, and introduced a syntax formatter in SymbolMap.ts. Grouped memories (👥) feature interactive name-list tooltips.",
+            "why": "Prevents memory log flooding (x144 counts), optimizes neural storage, and provides a more realistic, non-verbal cognitive representation for organisms."
+        }
+    },
+    "Prompts": {
+        "Evolutionary Linguistic Engine": "Create a plan to Implement this feature map : evolutionary_linguistic_engine = { ... } [truncated for space, full map in previous history]",
+        "Procedural World Generation": "Everything about the map should be procedurally generated. create a high performance aesthetic texturing system to make the ground interesting and varied in biome type. expand the map to twice it's footprint, create a geologic/geographic shape using collidable cliffs and other natural appearing impassable barriers.",
+        "Aesthetic & Scaling Overhaul": "Modify the GUI code to ignore/be unchanged by browser or PC scaling options, use a fixed-ratio for everything. Create a method to find the display size and shape that the app is rendered on and base the GUI initialization scale on that (as an initial value) and then use the initial value as the mid-point on a scaling slider. Everything the GUI text is ugly. Remove 50% of the excessive blank/empty space in the UI around the text. also ENSURE the text/ui tooltips are not restricted by their parent or other windows. Don't make it all caps everywhere, use a nice color palette. Create a UI color theme setting panel and make 'turtle' the default. Please spell out words that have no business being abbreviated like 'NRG'. Change the program-wide font to EB Garamond Normal, add professional level visual clarity effects like glow dropshadows.",
+        "Autoscale Feature": "Only modify code relevant to creating the following autoscale feature, do not modify the actual game scale or method the game uses to determine it's ui size. Use the existing GUI /scale do not change it at all but create an Autoscaling feature that will scale(using the existing slider and its ranges) the GUI from its current browser based size, to a size that makes sense based on how readable text would be on a display resolution that its being shown on. Create an autoscale on-by-default toggle for Autoscaling in the settings page near the scale slider.",
+        "Scaling & Interaction Fix": "The GUI is far too small, autoscale isn't functioning as intended. Fix it so that autoscale matches the GUI text size to the google chrome's text size. Ensure the settings button and the dbvidualizer gui elements are clickable. I cant click them the mouse scrolls the map in the background.",
+        "Event Focus Fix": "Diagnose and fix why nearly all events in the log, when clicked/selected, will pan/zoom to an area outside of the game area.",
+        "Time & UI Overhaul": "Base time on 60s=1h. Update panel: L1 Day # of Season #, L2 written season name, L3 Julian Day # of Cycle #. Mirror scaling/spacing for Apex Genomes, dock it below time panel, make collapsible/expandable (persist setting). Reformat Apex Genomes with sort dropdown (Longest Lineage default). Make Inspectors moveable and deconflicting.",
+        "UI Spacing & Log Refinement": "Spacing/padding is far too high before and after text or between elements in the apex genome panel. Match the entire GUI to visually match the spacing of the time panel. Remove the drag to pan controls hints at the bottom of the screen and widen the log slightly (but based on screen width) to show more data",
+        "Sensory Juice Mechanics": "Apply the Hierarchy of Juice: Proximate Feedback (immediate response), Kineticism (weight/damping), and Polysensory Redundancy (Visual/Flash for info).",
+        "Entity Inspector Overhaul": "Modify the information panel to be more easy to read and have more important information. Turn the clan name into an expanding panel. Restructure DNA attributes to read cleaner. Modify memory log spacing and insert emojis. Move days alive to top right as Age.",
+        "Fluid Scaling & Modularization": "Finalizing the global scaling overhaul. Audit all components (Registry, Inspector, HUD, Modals, VDB Visualizer) and ensure they utilize the GlobalScaling.css tokens. Replace all hardcoded pixel values with fluid variables. Verify seamless integration and resolution independence across the entire GUI.",
+        "Selection Juice & Tailwind Removal": "Make the Fauna selection more friendly(They are catch) and juicy -Add some kind of mouse-over indicator to show which Fauna will be selected if clicked. -Add an appealing indicator or reuse the same indicator to show which Fauna is currently selected -Have the camera follow the Fauna if double-clicked or selected twice (provide juicyness to this as well) -Make the Faunas eyes significantly more visible",
+        "Selection Alignment & Indication Fix": "The coordinates im clicking and the Fauna being selected are very different. Its almostimpossible to get one selected. Diagnose and fix the selection logic. Change the selection indication ring something Juicy, aesthetically pleasing, and animated",
+        "DPR Coordinate Parity & Fluid Navigation": "The Fauna/map WebGL renderer thinks the mouse is about 1/3 of the screen directly lower than where the mouse actually physically is AND the vertical drag-to-pan is inverted. Ensure the mouse true location is synchronized with where the game thinks it is so the user can actually select what they''re hovering over. Ensure the Pan function is an intuitive acceptable speed and functions normally. Increase the fluidity of the zoom function and increase the speed based on the speed of the mouse-wheel.",
+        "SDF Performance Optimization": "Something in the recent change ruined the render performance, Evaluate diagnose and fix why the SDF WebGL egine is not high performance for 150 entities, try to maintain performance for 1000+",
+        "Extreme Scale Optimization Audit": "Something in the SDF WebGL render is still dragging performance to a halt at 150 entities. Diagnose and evaluate the entire system to ensure that the more robust WebGL renderer is handling Flora,Faunas, map, etc. and attempt to locate the cause of the performance issue.",
+        "Modular Architecture Restructuring": "Modify ONLY the code necessary to accomplish the following restructuring: Separate the Fauna/Flora Logic and Fauna/Flora Rendering code into a modular data-driven architecture. Use the following project structure and guidelines to reorganize: { 'src': { 'core': ['SimulationEngine.ts', 'Metabolism.ts', 'VectorMath.ts'], 'evolution': ['TraitManifest.ts', 'GeneticsEngine.ts', 'SpeciesRegistry.ts'], 'entities': { 'Fauna.ts': 'Base class for shared logic', 'Flora.ts': 'New file for Flora logic/types', 'SpeciesA': ['Logic.ts', 'DNAProfile.ts'] }, 'rendering': ['WebGLRenderer.ts', 'FaunaShaders.glsl', 'AppearanceMapper.ts'], 'data': ['VectorDB.ts'] } }",
+        "Standardized Units & Debugging": "Create a debugging toggle panel on the main screen (use the same style as the settings gui button) but make it tinted red. Make it a drop-down on hover-over button and put a Vision cone toggle button (default to on with persistent between sessions setting) so that I can see where my Faunas can and can not see. Also add a view grid toggle default to on with session-to-session persistence if the program is started/stopped. Move all Fauna&DNA/entity/Flora, time, to Constants.ts in a visually structured and readable way for manual balancing/correction. Remove all simulation artificial limitations. Interlink all distances (map size, grid size, the definition of a meter, define centimeters (cm) based on meters Base Fauna size off on centimeters (cm) and adjust default range to 45 - 55 Base Fauna speed on meters and adjust default range to 0.4 to 0.6 m/s Set metabolic rate/efficiency to range of 0.7 to 1.1 // --- WORLD SPACE --- WORLD_SIZE_METERS: 100, PIXELS_PER_METER: 20, METERS_PER_CELL: 1, get GRID_RES() { return this.WORLD_SIZE_METERS }, // --- TIME (1 Minute = 1 Day) --- FPS: 60, SECONDS_PER_DAY: 60, get FRAMES_PER_DAY() { return this.FPS * this.SECONDS_PER_DAY }",
+        "Scale & Metabolism Fix": "Diagnose and fix meter and centimeter size issue. Faunas are tremendous.",
+        "Flora Performance & Units Refinement": "Modify only code necessary to complete the following instructions: Diagnose and adjust/fix the following: -The creatures eyes are difficult to see they're below some kind of visual layer and should be much more visible/obvious. -Adjust the creature body's juicyness to be less rigid and move based on its movement -Synchronize and centrally referenece distances to meter, time to days or seasons -Fauna information should show their lifespan and age in Days and years. Ensure all references to meters actually corresponds to meters which SHOULD be calculated by PIXELS_PER_METER: 20, And CLUSTER_SEARCH_RADIUS_PX should be meters as well. All distances should be based off of meters. Including creatures vision and speed. Meters should be defined by calculating PIXELS_PER_METER: 20, Nothing should be by the pixel. Plant growth probability should be per hour. Create an Optimized high performance but beautifully juicy drawn Flora Update Loop",
+        "Refining Creature Genetics": "Consolidate all Fauna and Flora related code, into respective directory in Entities, ensure render is still separate from logic. Ensure all Fauna and Flora DNA constants are moved into their respective DNAProfile.ts files. Also fix the creature's vision as it is currently not being represented by a vision cone or accurately calculated based on radian degrees/meters(one grid square). Ensure all constants are easily located and adjusted for each species. Also modify the creature eye rendering in the shaders so that they look like eyes correctly, with white sclera and black pupils.",
+        "Vision Cone & Field of View Parity": "Creature vision cone should match vision range and field of view. DNA traits for the creature say sight_range: [9, 15], // meters, sight_fov: [65, 85], // degrees. But the creature inspection panel reads ~13 meters and the vision cone only spans about 1.5-2.0 grid boxes (which should be 1square meter. Ensure everything is based on the constants WORLD_CONSTANTS, SIM_CONSTANTS. DNA field of view should be correctly linked/referenced and define the creature.",
+        "Flora Temporal Alignment": "reevaluate DNAProfile.ts for the fern and ensure it also falls in line with the live biological metric idea- Nuetrient density seems to be a fixed range but unless thats the base value annotate clearly all of the customizable values. Adjust growth speed to be relative to game hours and days like growth speed (80-100% as a DNA trait) which happens variably (min 0d1hr max 0d3hr or something alternatively organic that makes sense relative to game time.",
+        "Flora DNA Interlinking": "Modify the DNAprofile of the fern as follows, do not modify any code that is not related to completing the following tasks: Modify the growth time windows to be a single Growth speed ratio (as a range)based on one season- so if its 100% it means the fern fully matures in just over a season, 5% per day. Integrate the growth time windows, stem thickness, leaf size, and clump radius into the DNA Genome. Interlink all of the old and new genome traits intelligently to balance the DNA with checks and balances, such as Leaf size, stem size, nutrient value, growth rate etc, complexity. Ensure daily nutrient values are adjusted to make survival viable for the current Fauna",
+        "Flora Inspection & Ecological Balancing": "Create hover-over indicator and selection mechanism for inspecting Flora via the entity inspector and it's genome like the Fauna one but visually different. Ensure a singular originating nutrient value like \"base nutrient min\" can be edited to appropriately scale the Flora to Feed the fauna. restructure entityinspector to support displaying Flora in a similar way to how it does Fauna. (featuring nutrient value and genome)",
+        "Biosphere UI Polishing & Centralization": "Fix the Flora inspection panel to consistently follow the understandable language in the rest of the GUI such as \"Energy\" and other humanly understandable unabbreviated terms. Use the tooltip component to make tooltips explaining each displayed item in detail. Review and assess the relevance of the curret Flora_constants in the constants.tx file, update/remove/replace all constants with top level convenient foundational values - to be appropriately referenced by their appropriate entities - to ultimately aid in the easy balancing of the game's mechanisms from a central place.",
+        "Fauna Cognition Overhaul": "Implement a comprehensive overhaul of the Fauna cognition system. This includes enhancing the memory system, refining hunting and traveling logic, expanding sensory inputs (audible and communication ranges), and updating the UI with tooltips and debugging overlays. The user also wants to introduce a master toggle for all debugging overlays.",
+        "Fauna Pathing oscillation fix": "Fauna still gets stuck rapidly oscillating 180Degrees on top of food unable to consume it and they die",
+        "Fauna consumption memory fix": "After they eat their first food the stop and starve to death.",
+        "Organic movement & Stall fix": "The creatures go for a bit but they seem to no longer wander and eventually come to a full stop and starve. They also turn far too sharply make the movement more organic",
+        "Memory population & Retention fix": "Memories are not correctly populating, creature is seeing many ferns but despite eating many ferns it gains no new memories of such. Diagnose and debug pathing logic and handling",
+        "Chronos Clock & Ecosystem Seeding": "Modify only code necessary to make the following modifications: GUI Update the Chronos Layer to -Draw clock-type object depicting 1/24th segments of Each day to give the feeling of time moving. -Update the time text to read Hour # of Day # of # Season Game logic -Update the Flora to initially spawn at various upper-level maturity levels as if the world existed long before the organisms.",
+        "Permanence & Stalling Fix": "Fauna still eventually slows to a full stop and stops moving, eventually starves to death. Unsure if this is a broken wander/search mechanism and/or a failure to recall in memory food seen before. Task: Diagnose/investigate both methods for failure possibilities. When the page is refreshed all new simulation appears, new Flora, new Fauna, new map. This should all persist/have permanence in the Vector DB unless reset via the UI.",
+        "Storage Quota & Recursion Fix": "Diagnose the following issue, describe the problem in detail and create an implementation plan to fix it.: VDB: Storage Quota Exceeded. Pruning history aggressively. VectorDatabase.saveHistory (VectorDB.ts:130:14) Uncaught RangeError: Maximum call stack size exceeded. VDB: Failed to save state QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ales_sim_state' exceeded the quota.",
+        "Fixing VFX and DB Reset": "Diagnose and determine the following: Organism VFX is still bright/washed out when it should be bioluminescent brightly colorful but not white washed. Separate and modularize creature rendering to support multiple types of organisms with a centrally referrenced vfx/appearance section, for easy debugging/hooking for in the future when organisms are editable in a visual environment. Add Diagnose and fix the db reset button (which does not work) then do it",
+        "Robust Optimized Persistence": "Unified storage architecture with industry-leading tokenization and budgeting. Prevents silent save failures and ensures complex states persist reliably within browser quotas.",
+        "Hybrid Blending VFX Restoration": "Restored 'jelly' body blending by decoupling base body pass from instanced overlays. Restores juicy organic feel while maintaining high performance.",
+        "Instanced Soft-Body Rendering": {
+            "description": "Migrated all body rendering to the instanced shader pass, removing the O(Pixels * N) global loop.",
+            "how": "Implemented 'Jelly' wobble and soft-edge SDF logic directly in FAUNA_FRAG_SHADER.",
+            "why": "Eliminates the performance bottleneck at high entity counts (600+) while preserving visual fidelity."
+        },
+        "VFX & Performance Optimization Request": "Diagnose and determine: VFX not fully restored, bodies no longer have glowing aura... Performance bottlenecks related to Fauna... why rendering slows to a crawl at 600 organisms.",
+        "Communication & Memory Upgrades": "Ensure that organisms communications (such as memory sharing) is limited to their Vocalization range, and outside of that they do not even try, and their ability to receive vocalization or any audio sensory inputs is limited to their Hearing range. Ensure organisms perform a 'greeting' at each interaction to serve as a check, which ensures only information that is not already known to the recipient will be shared. rate-limit communications to a cooldown(referenced in the constants) and vocal should currently default to about 5s. Ensure memory log pins and auto-stacks (using simple x# notation) any high volume entries to the top temporarily until they all expire normally. Modularize the memory system by creating a centralized memory word map in the congnition folder called SymbolMap.ts and moving the entitty inspector's icon to type mapping into it.",
+        "Memory Syntax & Rate Limiting": "Numerical multiples of memories are far too high. They are seeing eachother by name x5 or x144, allow them to track in real time as necessary but there should be a rate limit. Something isn't quite right or realistic. Stacking doesnt seem to work correctly,the memory log is still flooded. If the memories are about a named individual for multiple named individuals use 👥 and have a popup tooltip that will list all their names if hovered over. Do not use words in memories unless its required (names) Ensure syntax is in accordance with this and centrally referencable and editable for future expansion: change syntax to use the following: 🌀 (perception)always preceeds sensory type 🔆is always realization or the link (like when fern is recognized as food For entities that meet and greet, exchange names and become familiar: [🌀👁️👤] 🔆 {⚛️🫂} To represent Perception-vision-entity then the moment of recognition, followed by concept of familiarity For entities that visibily see eachother but no exchange/recognition is known [🌀👁️👤] or when recognition is knowm already: [🌀👁️👤]🔆 {⚛️🫂} When grouping mutiple familiar entities just use [🌀👁️🫂] x#"
+    }
+}

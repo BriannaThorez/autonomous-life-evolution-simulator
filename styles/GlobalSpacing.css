@@ -1,0 +1,519 @@
+:root {
+    /* Forces 1rem to always be exactly 20px, ignoring Windows scaling */
+    /* Automatically matches browser base size (usually 16px) 
+       but clamps it so Windows scaling can't push it past 20px. */
+    font-size: clamp(14px, 1.2vw, 20px);
+    /* Fluid Scaling Units */
+    --fluid-space-xs: clamp(0.125rem, 1%, 0.15rem);
+    --fluid-space-sm: clamp(0.25rem, 1.5%, 0.3rem);
+    --fluid-space-md: clamp(0.5rem, 2%, 0.55rem);
+    --fluid-space-lg: clamp(0.75rem, 3%, 0.85rem);
+    --fluid-space-xl: clamp(1rem, 5%, 1.15rem);
+
+    --fluid-radius: clamp(0.25rem, 2%, 0.75rem);
+    --fluid-radius-lg: clamp(0.5rem, 4%, 1.5rem);
+
+    /* Text Clamps for High-Res Consistency */
+    --text-xs: clamp(0.4rem, 0.8%, 0.5rem);
+    --text-sm: clamp(0.5rem, 1%, 0.6rem);
+    --text-md: clamp(0.6rem, 1.2%, 0.7rem);
+    --text-base: clamp(0.6rem, 1.2%, 0.8rem);
+    --text-lg: clamp(0.7rem, 1.5%, 0.9rem);
+    --text-xl: clamp(0.8rem, 2%, 1rem);
+    --text-2xl: clamp(0.9rem, 3%, 1.1rem);
+    /* Text hugging: prevent line-height from bloating the box */
+    line-height: 1.1;
+}
+
+/* Base Body Styles */
+body {
+    font-family: 'Lexend', sans-serif;
+    background: #050505;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+}
+
+/* 1. SPACING UTILITIES */
+
+/* Padding */
+.fluid-p-xs {
+    padding: var(--fluid-space-xs);
+}
+
+.fluid-p-sm {
+    padding: var(--fluid-space-sm);
+}
+
+.fluid-p-md {
+    padding: var(--fluid-space-md);
+}
+
+.fluid-p-lg {
+    padding: var(--fluid-space-lg);
+}
+
+.fluid-p-xl {
+    padding: var(--fluid-space-xl);
+}
+
+.fluid-px-xs {
+    padding-left: var(--fluid-space-xs);
+    padding-right: var(--fluid-space-xs);
+}
+
+.fluid-px-sm {
+    padding-left: var(--fluid-space-sm);
+    padding-right: var(--fluid-space-sm);
+}
+
+.fluid-px-md {
+    padding-left: var(--fluid-space-md);
+    padding-right: var(--fluid-space-md);
+}
+
+.fluid-px-lg {
+    padding-left: var(--fluid-space-lg);
+    padding-right: var(--fluid-space-lg);
+}
+
+.fluid-px-xl {
+    padding-left: var(--fluid-space-xl);
+    padding-right: var(--fluid-space-xl);
+}
+
+.fluid-py-xs {
+    padding-top: var(--fluid-space-xs);
+    padding-bottom: var(--fluid-space-xs);
+}
+
+.fluid-py-sm {
+    padding-top: var(--fluid-space-sm);
+    padding-bottom: var(--fluid-space-sm);
+}
+
+.fluid-py-md {
+    padding-top: var(--fluid-space-md);
+    padding-bottom: var(--fluid-space-md);
+}
+
+.fluid-py-lg {
+    padding-top: var(--fluid-space-lg);
+    padding-bottom: var(--fluid-space-lg);
+}
+
+.fluid-py-xl {
+    padding-top: var(--fluid-space-xl);
+    padding-bottom: var(--fluid-space-xl);
+}
+
+/* Margins */
+.fluid-m-xs {
+    margin: var(--fluid-space-xs);
+}
+
+.fluid-m-sm {
+    margin: var(--fluid-space-sm);
+}
+
+.fluid-m-md {
+    margin: var(--fluid-space-md);
+}
+
+.fluid-m-lg {
+    margin: var(--fluid-space-lg);
+}
+
+.fluid-mx-xs {
+    margin-left: var(--fluid-space-xs);
+    margin-right: var(--fluid-space-xs);
+}
+
+.fluid-mx-sm {
+    margin-left: var(--fluid-space-sm);
+    margin-right: var(--fluid-space-sm);
+}
+
+.fluid-mx-md {
+    margin-left: var(--fluid-space-md);
+    margin-right: var(--fluid-space-md);
+}
+
+.fluid-my-xs {
+    margin-top: var(--fluid-space-xs);
+    margin-bottom: var(--fluid-space-xs);
+}
+
+.fluid-my-sm {
+    margin-top: var(--fluid-space-sm);
+    margin-bottom: var(--fluid-space-sm);
+}
+
+.fluid-my-md {
+    margin-top: var(--fluid-space-md);
+    margin-bottom: var(--fluid-space-md);
+}
+
+/* Gaps */
+.fluid-gap-xs {
+    gap: var(--fluid-space-xs);
+}
+
+.fluid-gap-sm {
+    gap: var(--fluid-space-sm);
+}
+
+.fluid-gap-md {
+    gap: var(--fluid-space-md);
+}
+
+.fluid-gap-lg {
+    gap: var(--fluid-space-lg);
+}
+
+.fluid-gap-xl {
+    gap: var(--fluid-space-xl);
+}
+
+/* 2. LAYOUT UTILITIES */
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.items-start {
+    align-items: flex-start;
+}
+
+.items-end {
+    align-items: flex-end;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.fixed {
+    position: fixed;
+}
+
+.inset-0 {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.pointer-events-none {
+    pointer-events: none;
+}
+
+.pointer-events-auto {
+    pointer-events: auto;
+}
+
+.z-0 {
+    z-index: 0;
+}
+
+.z-10 {
+    z-index: 10;
+}
+
+.z-20 {
+    z-index: 20;
+}
+
+.z-30 {
+    z-index: 30;
+}
+
+.z-40 {
+    z-index: 40;
+}
+
+.z-50 {
+    z-index: 50;
+}
+
+.z-100 {
+    z-index: 100;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.h-full {
+    height: 100%;
+}
+
+.h-screen {
+    height: 100vh;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.select-none {
+    user-select: none;
+}
+
+.z-50 {
+    z-index: 50;
+}
+
+.transition-all {
+    transition: all 0.2s ease;
+}
+
+.opacity-40 {
+    opacity: 0.4;
+}
+
+.opacity-100 {
+    opacity: 1;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.fluid-rounded-sm {
+    border-radius: calc(var(--fluid-radius) * 0.5);
+}
+
+.fluid-rounded {
+    border-radius: var(--fluid-radius);
+}
+
+.fluid-rounded-md {
+    border-radius: calc(var(--fluid-radius) * 1.5);
+}
+
+.fluid-rounded-lg {
+    border-radius: var(--fluid-radius-lg);
+}
+
+.fluid-rounded-xl {
+    border-radius: calc(var(--fluid-radius-lg) * 1.5);
+}
+
+.fluid-rounded-full {
+    border-radius: 9999px;
+}
+
+.glass-modular {
+    background: rgba(15, 23, 16, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(19, 184, 179, 0.789);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* 3. INTERACTIVE JUICE & ANIMATIONS */
+.juice-interactive {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.juice-interactive:active {
+    transform: scale(0.94);
+}
+
+.juice-interactive:hover {
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 8px 1px rgba(162, 213, 171, 0.1);
+}
+
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.w-fit {
+    width: fit-content;
+}
+
+.ml-auto {
+    margin-left: auto;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.backdrop-blur-2xl {
+    backdrop-filter: blur(40px);
+}
+
+.backdrop-blur-xl {
+    backdrop-filter: blur(24px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.bg-radial-dark {
+    background: radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 1) 0%, rgba(0, 0, 0, 1) 100%);
+}
+
+.mask-gradient {
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+}
+
+.group:hover .group-hover-visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.group:hover .group-hover-text-accent {
+    color: #39AEA9 !important;
+}
+
+@keyframes juice-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(162, 213, 171, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(162, 213, 171, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(162, 213, 171, 0);
+    }
+}
+
+@keyframes juice-glow {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        filter: brightness(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        filter: brightness(1.5);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.9;
+        transform: scale(0.98);
+    }
+}
+
+.animate-float-slow {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+    animation: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 4. COMPONENT CLASSES & MASKS */
+.mask-gradient {
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.registry-item {
+    display: flex;
+    align-items: center;
+    gap: var(--fluid-space-xs);
+    padding: calc(var(--fluid-space-xs) * 1.5);
+    border-radius: var(--fluid-radius);
+    transition: all 0.2s ease;
+}
+
+.btn-standard {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--fluid-space-sm) var(--fluid-space-md);
+    border-radius: var(--fluid-radius);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: var(--fluid-space-xs);
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--fluid-radius);
+}

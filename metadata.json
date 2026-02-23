@@ -1,0 +1,5 @@
+{
+  "name": "ALES: Autonomous Life Evolution Simulator",
+  "description": "A high-performance evolutionary simulator featuring dominance-based genetics, quadratic metabolic taxes, and vector-based analytical sensing.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,79 @@
+﻿{
+    "Project":  "autonomous-life-evolution-simulator",
+    "Features":  {
+                     "Registry_Optimization":  {
+                                                   "description":  "Async_persistence_and_UI_refresh",
+                                                   "how":  "Refactored_to_idle_cycles_and_glass_modular_CSS",
+                                                   "why":  "Performance_and_visual_consistency",
+                                                   "last_updated":  "2026-02-23 06:10:00"
+                                               },
+                     "Multithreaded_Worker_Architecture":  {
+                                                               "description":  "Off-main-thread simulation and rendering using Web Workers and OffscreenCanvas.",
+                                                               "how":  "Migrated SimulationEngine and WebGLRenderer to sim.worker.ts. Implemented numeric SpatialGrid indexing and lightweight state syncing.",
+                                                               "why":  "Eliminates main-thread saturation, resolves UI sluggishness, and enables ultra-high entity counts.",
+                                                               "last_updated":  "2026-02-18 13:15:00"
+                                                           },
+                     "Fauna VFX Restoration":  {
+                                                   "description":  "Restored jelly-warp bioluminescent glow hover inspector unit labels sensory differentiation mating merge",
+                                                   "how":  "Modified shader wobble glow params wired hoveredId pipeline fixed mating index packing updated unit labels",
+                                                   "why":  "VFX regressions made fauna flat hover broken sensors identical units abbreviated",
+                                                   "last_updated":  "2026-02-20 09:11:34"
+                                               },
+                     "Phase 2 Camera Warp Glow Perf Persistence":  {
+                                                                       "description":  "Fixed follow-view centering, physics-based jelly warp, zoom snap-back, outline glow gradient, rendering performance at 2000+ organisms, and IndexedDB persistence migration",
+                                                                       "how":  "Worker uses actual logicalResolution for follow-cam. CPU cross-product drives jelly warp. Follow-mode zoom defers offset to worker. SDF outline glow ring added. HSL cache and reusable Float32Arrays and O(1) mate map. IndexedDB replaces localStorage 4.5MB budget.",
+                                                                       "why":  "Follow-cam off-center, wobble was periodic jitter, zoom snapped back, missing outline glow, 120K regex per sec, localStorage budget mass-deleted organisms",
+                                                                       "last_updated":  "2026-02-20 10:35:33"
+                                                                   },
+                     "Organism Persistence Fix":  {
+                                                      "description":  "Fixed save-load pipeline: dual-write to IndexedDB plus localStorage, cached latest worker state for beforeunload, direct VectorDB saves bypassing engine middleman",
+                                                      "how":  "saveSimState writes to both IndexedDB and localStorage. App.tsx caches latestWorkerState ref from SAVE_REQUIRED. beforeunload saves freshest worker state directly.",
+                                                      "why":  "Saves went to IndexedDB but loads read only localStorage. beforeunload saved stale main-thread state.",
+                                                      "last_updated":  "2026-02-20 11:48:01"
+                                                  },
+                     "Fix Memory Timestamp":  {
+                                                  "description":  "Memories use correct sim tick",
+                                                  "how":  "",
+                                                  "why":  "",
+                                                  "last_updated":  "2026-02-22 13:00:13"
+                                              }
+                 },
+    "Prompts":  [
+                    {
+                        "timestamp":  "2026-02-16 19:17:11",
+                        "text":  "Optimizing Flora Rendering. Optimize the simulation\u0027s performance, specifically addressing the rendering of a large number of flora entities. Achievement of a smooth 60FPS experience without throttling updates or reducing the visible flora count."
+                    },
+                    {
+                        "timestamp":  "2026-02-16 19:38:56",
+                        "text":  "VectorDB Performance Tuning. Evaluate and optimize the VectorDB system for high performance, scalability, and efficiency. Ensure the VectorDB visualizer interface is intuitive, functional, and visually consistent with the main game GUI\u0027s color scheme and scaling."
+                    },
+                    {
+                        "timestamp":  "2026-02-16 20:37:25",
+                        "text":  "VectorDB Performance Tuning. Evaluate and optimize the VectorDB system for high performance, scalability, and efficiency, particularly concerning memory-intensive data saving and loading processes. Additionally, ensures the VectorDB visualizer interface is intuitive, functional, and visually consistent with the main game GUI\u0027s color scheme and scaling."
+                    },
+                    {
+                        "timestamp":  "2026-02-18 06:07:53",
+                        "text":  "Diagnose and determine cause of out of memory failure. Allocation Churn caused by per-frame object recreation of Logic, Brain, and Memory systems leading to GC pressure. Solutions included persistent logic maps, React state throttling, and direct canvas rendering."
+                    },
+                    {
+                        "timestamp":  "2026-02-18 13:15:00",
+                        "text":  "Identify source of sluggishness even with low system usage. Resolve by migrating the simulation engine to a Web Worker and utilizing OffscreenCanvas for rendering to achieve ultra-high performance without artificial caps on simulation entities."
+                    },
+                    {
+                        "timestamp":  "2026-02-20 09:12:56",
+                        "text":  "Diagnose and discover where all of the enhanced VFX for the Fauna has gone - their bodies should warp like jelly when they move - The entity inspector doesnt popup on hover correctly - The entity inspector units have been erroneously shortened (meter to m) - The entities no longer display as jelly like and bioluminescent - their sensory indicators are always active and indistinguishable (make anything passive a different effect and make their vocal range the radiating ping)"
+                    },
+                    {
+                        "timestamp":  "2026-02-20 10:35:39",
+                        "text":  "Follow-view is not centered on organism when double-click-to-follow mode is active. Organism body jiggles do not seem to represent their movement. It should be a warp (think jelly) based on speed and direction change (with limits). View zooming seems to zoom to the wrong place and then snap back quickly. Creatures look great but are still missing the outline glow that created the attached gradient-like effect. Determine cause of enormous performance issues rendering many organisms (2000+). Determine cause and workaround for lack of organism persistence, is it a DB size limit and if so, how can we work around it? Screen refresh mass-deletes organisms."
+                    },
+                    {
+                        "timestamp":  "2026-02-20 11:53:12",
+                        "text":  "Organisms still not persisting through page refresh, ensure save mechanism is proactive and ensure all data managed within the vectorDB"
+                    },
+                    {
+                        "timestamp":  "2026-02-22 12:55:29",
+                        "text":  "Diagnose and determine -why Fauna are not creating memories"
+                    }
+                ]
+}
