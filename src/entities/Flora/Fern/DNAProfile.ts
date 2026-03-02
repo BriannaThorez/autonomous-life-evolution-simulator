@@ -1,43 +1,81 @@
-import { FLORA_CONSTANTS } from '../../../core/Constants';
+import { FloraGenome } from '../../../../types';
+import { SIM_CONSTANTS } from '../../../core/Constants';
 
 export const FERN_DNA_PROFILE = {
     // --- TEMPORAL CALIBRATION ---
-    // A ratio of 1.0 (100%) means the plant reaches 100% maturity in exactly ONE SEASON (20 days).
-    // This results in a base growth of 5% per game day.
-    GROWTH_RATIO_UNIT: 1.0, // Base unit for seasonal mapping
+    MATURATION_DAYS_ESTIMATE: 3,
 
-    // --- GENETIC RANGE MANIFEST (Checks & Balances) ---
-    // These traits are INTERLINKED during genome expression.
+    // --- GENETIC RANGE MAPPINGS ---
     TRAIT_RANGES: {
-        // [Growth & Structure]
-        growth_speed_ratio: [1.0, 3.0], // 10% to 100% of seasonal speed
-        complexity: [8, 10],            // Max branching segments (Costs Mass)
-
-        // [Physical Mass]
-        stem_thickness: [1.0, 3.0],     // Base weight (Costs Speed, Benefits Nutrients)
-        leaf_size: [2.0, 8.0],          // Surface area (Costs Speed, Benefits Nutrients)
-
-        // [Ecological]
-        clump_radius: [10, 30],         // Propagation density
-        persistence: [5000, 15000],     // Frames before biological wilting
-        hue: [80, 140]                  // Species-specific aesthetic range
+        growth_speed_ratio: [0.8, 1.2],
+        complexity: [2.0, 12.0],
+        stem_thickness: [0.5, 3.5],
+        leaf_size: [10.0, 50.0],
+        persistence: [2.0, 8.0],
+        hue: [90, 150],
+        clump_radius: [1.0, 3.0]
     },
 
-    // --- INTERLINKING MULTIPLIERS (Synced to Central Constants) ---
-    MASS_TO_ENERGY_FACTOR: FLORA_CONSTANTS.MASS_TO_ENERGY_SCALAR,
-    MASS_PENALTY_FACTOR: FLORA_CONSTANTS.GROWTH_MASS_PENALTY,
+    // --- ECOLOGY (Growth & Spreading) ---
+    ECOLOGY: {
+        HOURLY_RANDOM_SPAWN_CHANCE: 0.75,
+        BIOME_GRASS_GROWTH: 1.5,
+        BIOME_ARID_GROWTH: 0.1,
+        PROXIMITY_DENSITY_BONUS: 3.5,
+        CLUSTER_SEARCH_RADIUS_METERS: 1.2,
+        CLUSTER_MIN_NEIGHBORS: 2,
+        CLUSTER_MAX_NEIGHBORS: 5,
+        CLUSTER_GROWTH_RATE: 0.55,
+        CLUSTER_SPAWN_DISTANCE_MIN: 0.1,
+        CLUSTER_SPAWN_DISTANCE_MAX: 0.5,
+    },
 
-    // --- CENTRAL ECOLOGICAL BALANCING (Synced to Central Constants) ---
-    BASE_NUTRIENT_MIN: FLORA_CONSTANTS.NUTRIENT_BASE_MULTIPLIER,
+    // --- THERMODYNAMICS ---
+    THERMODYNAMICS: {
+        NUTRIENT_BASE_MIN: 150,
+        MASS_TO_ENERGY_SCALAR: 350.0,
+        GROWTH_MASS_PENALTY: 0.10,
+    },
+
+    // --- FACTORY: GENOME BUILDER ---
+    generateGenome: (): FloraGenome => {
+        const randRange = (min: number, max: number) => min + Math.random() * (max - min);
+        const ranges = FERN_DNA_PROFILE.TRAIT_RANGES;
+
+        // 1. Roll raw genetic potential
+        const rawGrowthRatio = randRange(ranges.growth_speed_ratio[0], ranges.growth_speed_ratio[1]);
+        const rawComplexity = randRange(ranges.complexity[0], ranges.complexity[1]);
+        const rawStem = randRange(ranges.stem_thickness[0], ranges.stem_thickness[1]);
+        const rawLeaf = randRange(ranges.leaf_size[0], ranges.leaf_size[1]);
+        const persistence = randRange(ranges.persistence[0], ranges.persistence[1]);
+        const hue = randRange(ranges.hue[0], ranges.hue[1]);
+        const clump = randRange(ranges.clump_radius[0], ranges.clump_radius[1]);
+
+        // 2. INTERLINKING (Checks & Balances)
+        const mass = (rawStem * rawLeaf * (rawComplexity / 6.0));
+        const massPenalty = 1.0 + (mass * FERN_DNA_PROFILE.THERMODYNAMICS.GROWTH_MASS_PENALTY);
+        const finalGrowthRatio = rawGrowthRatio / massPenalty;
+
+        const hoursPerSeason = SIM_CONSTANTS.FRAMES_PER_SEASON / SIM_CONSTANTS.FRAMES_PER_HOUR;
+        const hoursToMaturity = hoursPerSeason / finalGrowthRatio;
+        const hourlySpeed = Math.max(0.00001, 1.0 / hoursToMaturity);
+
+        const nutrients = Math.max(FERN_DNA_PROFILE.THERMODYNAMICS.NUTRIENT_BASE_MIN, mass * FERN_DNA_PROFILE.THERMODYNAMICS.MASS_TO_ENERGY_SCALAR);
+
+        return {
+            traits: {
+                structure: { v1: hourlySpeed, v2: rawComplexity, d1: Math.random(), d2: Math.random() },
+                vitality: { v1: nutrients, v2: persistence, d1: Math.random(), d2: Math.random() },
+                morphology: { v1: rawLeaf, v2: hue, d1: Math.random(), d2: Math.random() },
+                ecology: { v1: clump, v2: rawStem, d1: Math.random(), d2: Math.random() }
+            }
+        };
+    }
 };
 
 export const DIRECTIONS = [
-    { x: 0, y: -1 },  // N
-    { x: 1, y: -1 },  // NE
-    { x: 1, y: 0 },   // E
-    { x: 1, y: 1 },   // SE
-    { x: 0, y: 1 },   // S
-    { x: -1, y: 1 },  // SW
-    { x: -1, y: 0 },  // W
-    { x: -1, y: -1 }  // NW
+    { x: 0, y: -1 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 }
 ];

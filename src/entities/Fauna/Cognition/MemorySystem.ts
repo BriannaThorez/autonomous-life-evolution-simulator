@@ -1,7 +1,8 @@
 
 import { OrganismData, FloraData, Memory, Vector2 } from '../../../../types';
 import { VectorMath } from '../../../core/VectorMath';
-import { SIM_CONSTANTS, COGNITIVE_CONSTANTS } from '../../../core/Constants';
+import { SIM_CONSTANTS, COGNITIVE_CONSTANTS, UNIT_UTILS } from '../../../core/Constants';
+import { VectorDB } from '../../../data/VectorDB';
 
 export class MemorySystem {
     private data: OrganismData;
@@ -11,65 +12,78 @@ export class MemorySystem {
     }
 
     public addMemory(currentTime: number, type: Memory['type'], position: Vector2, content: string, data?: any) {
-        // 1. Rate-limiting for perception (Saw...)
-        // Only increment count or update if a significant time has passed since last perception
-        const isPerception = content.indexOf('Saw') !== -1;
+        // 1. Constants
+        const THREE_HOURS = 3 * SIM_CONSTANTS.FRAMES_PER_HOUR;
+        const visionRangePx = UNIT_UTILS.mToPx(this.data.expressedStats.sight_range);
 
-        // 2. Try to find existing memory for stacking/grouping
-        let existing = this.data.memories.find(m =>
+        // 2. Identify Target Entity ID (if any)
+        const targetId = data?.id;
+
+        // 3. Stacking Logic (Same exact entity/location, very recent)
+        let exactMatch = this.data.memories.find(m =>
             m.type === type && (
-                (data && m.data && m.data.id === data.id) || // Match by unique entity ID
-                (m.type === 'FaunaLocation' && data && m.entityIds?.includes(data.id)) || // Match if already in a group
-                (m.content === content && VectorMath.dist(m.position, position) < 5) // Match by content/position
+                (targetId && m.data && m.data.id === targetId) || // Match by unique entity ID
+                (targetId && m.entityIds?.includes(targetId)) || // Match if already in a group
+                (m.content === content && VectorMath.dist(m.position, position) < 8) // Match by content/position
             )
         );
 
-        if (existing) {
-            // Update position and timestamp
-            existing.position = { ...position };
-            const lastUpdate = existing.timestamp;
-            const timeSinceUpdate = currentTime - lastUpdate;
+        if (exactMatch) {
+            exactMatch.position = { ...position };
+            const timeSinceUpdate = currentTime - exactMatch.timestamp;
 
             // Rate-limit stacking: Only increment count every ~2 seconds (120 ticks)
-            // This prevents x144 for simply looking at someone.
-            if (timeSinceUpdate > 120 || !isPerception) {
-                existing.timestamp = currentTime;
-                existing.count = (existing.count || 1) + 1;
+            // if (timeSinceUpdate > 120 || type !== 'Fauna') {
+            //    exactMatch.timestamp = currentTime;
+            //    exactMatch.count = (exactMatch.count || 1) + 1;
 
-                // If it was a group memory, ensure it stays front
-                if (existing.count > 1) {
-                    const idx = this.data.memories.indexOf(existing);
-                    if (idx > 0) {
-                        this.data.memories.splice(idx, 1);
-                        this.data.memories.unshift(existing);
-                    }
-                }
-            }
+            // Keep front
+            //    this.data.memories = [exactMatch, ...this.data.memories.filter(m => m.id !== exactMatch?.id)];
+            //}
             return;
         }
 
-        // Grouping logic for "Familiar" entities (👥)
-        // If we see multiple familiar entities, merge into a group memory
-        if (type === 'FaunaLocation' && data && data.isFamiliar) {
-            const groupMemory = this.data.memories.find(m => m.type === 'FaunaLocation' && m.entityIds && m.entityIds.length > 0);
-            if (groupMemory) {
-                if (!groupMemory.entityIds?.includes(data.id)) {
-                    groupMemory.entityIds = [...(groupMemory.entityIds || []), data.id];
-                    groupMemory.content = `${groupMemory.entityIds.length} familiar entities`; // Updated by EntityInspector
-                    groupMemory.count = groupMemory.entityIds.length;
-                    groupMemory.position = { ...position };
-                    groupMemory.timestamp = currentTime;
+        // 4. Temporal & Spatial Grouping (👥)
+        // Check if there's a recent memory of same type within 3 simulation hours
+        const recentGroupable = this.data.memories.find(m =>
+            m.type === type &&
+            (currentTime - m.timestamp) < THREE_HOURS
+        );
+
+        if (recentGroupable && type === 'Fauna') {
+            const dist = VectorMath.dist(recentGroupable.position, position);
+            const distNormalized = dist / visionRangePx;
+
+            // Spatial Falloff: Higher probability of grouping if closer (within 60% of vision range)
+            const groupProbability = 1.0 - Math.pow(distNormalized, 0.5); // Concave falloff
+
+            if (Math.random() < groupProbability || dist < 50) {
+                // Group them
+                if (targetId && !recentGroupable.entityIds?.includes(targetId)) {
+                    recentGroupable.entityIds = [...(recentGroupable.entityIds || []), targetId];
+                    recentGroupable.count = recentGroupable.entityIds.length;
+
+                    // Update content name for UI tooltip logic
+                    if (recentGroupable.count > 1) {
+                        recentGroupable.content = `${recentGroupable.count} entities encountered`;
+                    }
+
+                    recentGroupable.timestamp = currentTime;
+                    // Move to front
+                    this.data.memories = [recentGroupable, ...this.data.memories.filter(m => m.id !== recentGroupable?.id)];
                     return;
                 }
             }
         }
+
+        // 5. Create New Memory
 
         this.data.memories.push({
             id: Math.random().toString(36).substr(2, 5),
             type,
             position: { ...position },
             timestamp: currentTime,
-            duration: SIM_CONSTANTS.SECONDS_PER_DAY * COGNITIVE_CONSTANTS.DAYS_TO_REMEMBER, // Remember for 1 days
+            duration: SIM_CONSTANTS.FRAMES_PER_DAY * COGNITIVE_CONSTANTS.DAYS_TO_REMEMBER, // Remember for 2 days (in frames)
             content,
             count: 1,
             data,
@@ -79,12 +93,18 @@ export class MemorySystem {
 
         // Cap memory size (preservingPinned)
         if (this.data.memories.length > COGNITIVE_CONSTANTS.TEMPORARY_MEMORY_LIMIT) {
+            // We prioritize keeping 'Familiar' (Met someone) or high-count memories
             const coldIdx = this.data.memories.findIndex(m => (m.count || 0) < 3 && !m.isFamiliar);
-            if (coldIdx !== -1) {
-                this.data.memories.splice(coldIdx, 1);
-            } else {
-                this.data.memories.shift();
-            }
+            const indexToRemove = coldIdx !== -1 ? coldIdx : 0;
+
+            const memoryToArchive = this.data.memories[indexToRemove];
+
+            // VERIFICATION: Log this to your console to see it happening live
+            // console.log(`Offloading memory ${memoryToArchive.type} to LT for ${this.data.id}`);
+
+            VectorDB.pushToHistory(this.data.id, memoryToArchive);
+
+            this.data.memories.splice(indexToRemove, 1);
         }
     }
 
@@ -93,7 +113,7 @@ export class MemorySystem {
         // If so, the food is gone. Delete the memory.
 
         this.data.memories = this.data.memories.filter(m => {
-            if (m.type === 'FoodLocation' || m.type === 'Flora') {
+            if (m.type === 'Food' || m.type === 'Flora') {
                 const dist = VectorMath.dist(position, m.position);
 
                 // If we are close enough to see it...
@@ -111,7 +131,7 @@ export class MemorySystem {
 
     public removeMemory(entityId: string, type?: Memory['type']) {
         this.data.memories = this.data.memories.filter(m => {
-            const isMatch = m.data && m.data.id === entityId;
+            const isMatch = (m.data && m.data.id === entityId) || m.entityIds?.includes(entityId);
             if (isMatch) {
                 // If type is specified, only remove if type matches. Otherwise remove all.
                 if (type && m.type !== type) return true;
@@ -119,9 +139,10 @@ export class MemorySystem {
             }
             return true;
         });
+
     }
 
     public getBestFoodLocation(): Memory | null {
-        return this.data.memories.find(m => m.type === 'FoodLocation' || m.type === 'Flora') || null;
+        return this.data.memories.find(m => m.type === 'Food' || m.type === 'Flora') || null;
     }
 }

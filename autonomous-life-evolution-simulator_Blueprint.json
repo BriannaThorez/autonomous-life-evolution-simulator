@@ -5,7 +5,7 @@
                                                    "description":  "Async_persistence_and_UI_refresh",
                                                    "how":  "Refactored_to_idle_cycles_and_glass_modular_CSS",
                                                    "why":  "Performance_and_visual_consistency",
-                                                   "last_updated":  "2026-02-23 06:10:00"
+                                                   "last_updated":  "2026-02-23 18:34:17"
                                                },
                      "Multithreaded_Worker_Architecture":  {
                                                                "description":  "Off-main-thread simulation and rendering using Web Workers and OffscreenCanvas.",
@@ -36,7 +36,31 @@
                                                   "how":  "",
                                                   "why":  "",
                                                   "last_updated":  "2026-02-22 13:00:13"
-                                              }
+                                              },
+                     "Neural Registry High-Density Modal":  {
+                                                                "description":  "A robust, scale-resistant VectorDB visualizer with forced overlay masking and compact typography.",
+                                                                "how":  "Utilizes absolute positioning at the bottom of the GUI layer and forced viewport masking (1.0 opacity black background) to eliminate HUD bleed. Typography is restricted to 6-10px ranges to handle GUI scaling.",
+                                                                "why":  "To resolve unusable scaling and overlapping HUD elements in the previous visualizer version.",
+                                                                "last_updated":  "2026-02-23 20:08:13"
+                                                            },
+                     "Neural Registry \u0026 Memory Persistence Refactor":  {
+                                                                                "description":  "Reconstructed the persistence layer to use atomic IndexedDB storage with individual organism records. Implemented write-behind synchronization with dirty flags and event consolidation to support 2500+ organisms efficiently. Restored double-click zoom functionality to the Apex Registry.",
+                                                                                "how":  "Refactored VectorDB.ts to use separate object stores for organisms, events, and state. Implemented multi-store transactions and debounced flushes. Updated index.tsx to await initialization before app mounting. Added onFocus/onDoubleClick handlers to registry components.",
+                                                                                "why":  "To prevent data loss on refresh, improve simulation performance at scale, and restore critical navigation features for monitoring high-tier organisms.",
+                                                                                "last_updated":  "2026-02-23 20:26:43"
+                                                                            },
+                     "Flora Ecosystem Rebalancing":  {
+                                                         "description":  "Deconflicted Flora constants and rebalanced thermodynamic yields.",
+                                                         "how":  "Split FLORA_CONSTANTS to isolate FERN_CONSTANTS in Constants.ts. Reduced base nutrient min to 200 and increased MASS_TO_ENERGY_SCALAR to 450.0. Pointed DNAProfile.ts to utilize the new FERN_CONSTANTS.",
+                                                         "why":  "To prevent mass Fauna starvation caused by a flawed energy economy relative to plant age and size.",
+                                                         "last_updated":  "2026-02-27 22:49:22"
+                                                     },
+                     "Decoupled Flora Constants into DNA Profile":  {
+                                                                        "description":  "Removed FLORA_CONSTANTS global scope, migrated to specific DNA Profiles.",
+                                                                        "how":  "Moved FLORA_CONSTANTS and FERN_CONSTANTS entirely into FERN_DNA_PROFILE. Restructured Base.ts and SimulationEngine.ts to refer to these localized variables. Converted growth math to explicitly calculate on an hourly biological clock rather than fractional day/frame components.",
+                                                                        "why":  "To ensure biological isolation, allowing generic Flora logic to spawn specific species without global cross-contamination. Improved growth resolution and readability.",
+                                                                        "last_updated":  "2026-02-27 23:29:31"
+                                                                    }
                  },
     "Prompts":  [
                     {
@@ -74,6 +98,26 @@
                     {
                         "timestamp":  "2026-02-22 12:55:29",
                         "text":  "Diagnose and determine -why Fauna are not creating memories"
+                    },
+                    {
+                        "timestamp":  "2026-02-23 07:51:34",
+                        "text":  ""
+                    },
+                    {
+                        "timestamp":  "2026-02-23 20:08:16",
+                        "text":  "{\"prompt\": \"my VDB visualizer UI is terrible, unusable, and scaled wrong. please fix it. and please also disable all asexual reproduction mechanics, please comment out and annotate any/all relevant code for me.\"}"
+                    },
+                    {
+                        "timestamp":  "2026-02-23 20:26:48",
+                        "text":  "for now I dont want any organisms pruned since nothing is being saved anyway. I\u0027ll empty the DB when i reset it. I just want high rate low value entries consoidated like when creatures find or eat food. Don\u0027t use an local storage, use indexedDB for everything ensure the highest of industry standards for 2500+ organisms performance. I want all short term memories to go right into long term in the database."
+                    },
+                    {
+                        "timestamp":  "2026-02-27 22:48:45",
+                        "text":  "Fauna Flora needs balancing.... Fauna shouldnt need to eat so many Flora just to survive (they are currently not surviving- starving to death) Flora does not seem to grow appropriately in structure or nutrients, even though it has a growth rate per day. -Ensure all growth logic is sound and linked to the physical structure/size of the Flora. -Its unreasonable to have a NUTRIENT_BASE_MULTIPLIER: 2500, please ensure its possible to update the base nutrient values in the constants files -Ensure all growth related Flora items are also referenced in the constants. Ensure all Flora constants are deconflicted by species correctly, there is only one species currently (fern) but when more are added the names must be separate."
+                    },
+                    {
+                        "timestamp":  "2026-02-27 23:29:36",
+                        "text":  "Move all FLORA_CONSTANTS and FERN_CONSTANTS into FERN_DNA_PROFILE. Many of the plants will not resemble eachother so lets fill out the DNA better. Evaluate all fern and flora variables for orphans. Relocate other related values and formulas to the Fern DNA, anything that DNA would typically hold. Things seem scattered. Make growth rate calculations easier to understand and occur by the hour rather than by the day. Ensure there are no hard coded/fern specific things in base.ts and if it makes sense move those to the fern DNAProfile as well."
                     }
                 ]
 }

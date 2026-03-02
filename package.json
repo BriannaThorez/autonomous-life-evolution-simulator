@@ -11,8 +11,12 @@
   "dependencies": {
     "@babylonjs/core": "^8.50.5",
     "@babylonjs/loaders": "^8.50.5",
+    "@google/generative-ai": "^0.24.1",
+    "framer-motion": "^12.34.3",
+    "lucide-react": "^0.575.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

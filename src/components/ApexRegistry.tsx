@@ -1,18 +1,19 @@
 import React from 'react';
-import { SimulationState } from '../types';
+import { SimulationState } from '../../types';
 import Tooltip from './Tooltip';
 
 interface Props {
     simState: SimulationState;
     selectedId: string | null;
     onSelect: (id: string | null) => void;
+    onFocus?: (id: string) => void;
     expanded: boolean;
     onToggle: () => void;
     sort: 'LINEAGE' | 'ENERGY' | 'AGE';
     onSortChange: (sort: 'LINEAGE' | 'ENERGY' | 'AGE') => void;
 }
 
-const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, expanded, onToggle, sort, onSortChange }) => {
+const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus, expanded, onToggle, sort, onSortChange }) => {
     return (
         <Tooltip title="Apex Protocols" content="Real-time monitoring of the most successful biological entities based on lineage, energy efficiency, and survival duration." position="right">
             <div
@@ -123,6 +124,7 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, expande
                                             boxShadow: selectedId === org.id ? '0 0 15px rgba(57,174,169,0.1)' : 'none'
                                         }}
                                         onClick={(e) => { e.stopPropagation(); onSelect(org.id); }}
+                                        onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(org.id); }}
                                     >
                                         <div className="flex items-center fluid-gap-sm" style={{ minWidth: 0 }}>
                                             <span style={{ color: '#A2D5AB', opacity: 0.2, fontSize: '0.6rem', fontWeight: 900, width: '0.75rem' }}>{i + 1}</span>

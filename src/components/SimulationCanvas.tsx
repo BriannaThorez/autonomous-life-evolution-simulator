@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Vector2 } from '../types';
-import { SimulationEngine } from '../src/core/SimulationEngine';
+import { Vector2 } from '../../types';
+import { SimulationEngine } from '../core/SimulationEngine';
 
 interface Props {
   worker: Worker;

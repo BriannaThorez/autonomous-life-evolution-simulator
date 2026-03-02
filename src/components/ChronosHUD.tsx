@@ -1,6 +1,6 @@
 import React from 'react';
-import { SimulationState } from '../types';
-import { SIM_CONSTANTS, SEASON_THEMES } from '../src/core/Constants';
+import { SimulationState } from '../../types';
+import { SIM_CONSTANTS, SEASON_THEMES } from '../core/Constants';
 import Tooltip from './Tooltip';
 
 interface Props {
@@ -34,7 +34,7 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {
                         onClick={onOpenRegistry}
                         className="glass-modular fluid-rounded relative group pointer-events-auto cursor-pointer juice-interactive flex flex-col"
                         style={{
-                            width: '10rem',
+                            width: '8rem',
                             boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
                             border: '1px solid rgba(255, 255, 255, 0.05)'
                         }}
@@ -55,11 +55,11 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center text-center fluid-p-sm fluid-gap-xs">
+                        <div className="flex flex-col items-center text-center p-2 gap-1">
                             {/* 24-Hour Clock Visualization - Slightly Scaled Down */}
-                            <div className="relative flex-col flex-shrink-0 bg-black/20 rounded-full border border-white/5 p-1">
+                            <div className="relative flex-col flex-shrink-0 bg-black/20 rounded-full border border-white/5 p-1 w-12 h-12">
                                 <svg viewBox="0 0 100 100" className="w-full h-full">
-                                    <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="24" />
+                                    <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="18" />
                                     {Array.from({ length: 24 }).map((_, i) => {
                                         const isActive = i < (simState.hour || 0);
                                         const isCurrent = i === (simState.hour || 0);
@@ -93,9 +93,9 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {
 
                         {/* Minimal Julian Day Footer */}
                         <div
-                            className="fluid-px-sm fluid-pb-xs"
+                            className="px-2 pb-2"
                             style={{
-                                fontSize: '0.7rem', color: '#A2D5AB', opacity: 1.0, fontFamily: 'Lexend Deca', textAlign: 'center'
+                                fontSize: '0.6rem', color: '#A2D5AB', opacity: 1.0, fontFamily: 'Lexend Deca', textAlign: 'center'
                             }}
                         >
                             Cycle {simState.cycle} • Julian {(simState.day % daysPerYear) + 1}
@@ -110,7 +110,7 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {
                     <div
                         onClick={onOpenRegistry}
                         className="glass-modular fluid-rounded group relative pointer-events-auto cursor-pointer juice-interactive flex flex-col"
-                        style={{ minWidth: '12rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)' }}
+                        style={{ minWidth: '9rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)' }}
                     >
                         <div
                             className="fluid-rounded-t fluid-p-sm fluid-pb-xs"
@@ -121,15 +121,15 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {
                             </div>
                         </div>
 
-                        <div className="fluid-p-md" style={{ paddingTop: '0.1rem' }}>
-                            <div className="text-[var(--text-lg)] font-black litho-text uppercase" style={{ color: '#E5EFC1', fontFamily: 'Lexend Deca' }}>
-                                {simState.popCount ?? 0} <span style={{ color: '#E5EFC1', fontSize: 'var(--text-lg)', opacity: 0.7, letterSpacing: '0.2em' }}>Fauna</span>
+                        <div className="p-3" style={{ paddingTop: '0.1rem' }}>
+                            <div className="text-sm font-black litho-text uppercase" style={{ color: '#E5EFC1', fontFamily: 'Lexend Deca' }}>
+                                {simState.popCount ?? 0} <span style={{ color: '#E5EFC1', fontSize: '0.7rem', opacity: 0.7, letterSpacing: '0.2em' }}>Fauna</span>
                             </div>
                             <div
-                                className="flex items-center fluid-gap-md litho-text uppercase font-black"
+                                className="flex items-center gap-2 litho-text uppercase font-black"
                                 style={{
-                                    marginTop: '0.5rem', paddingTop: '0.1rem', borderTop: '1px solid rgba(255,255,255,0.05)',
-                                    fontSize: 'var(--text-lg)', color: '#A2D5AB', opacity: 0.8
+                                    marginTop: '0.25rem', paddingTop: '0.1rem', borderTop: '1px solid rgba(255,255,255,0.05)',
+                                    fontSize: '0.85rem', color: '#A2D5AB', opacity: 0.8
                                 }}
                             >
                                 <span style={{ color: '#E5EFC1' }}>{simState.floraCount ?? 0}</span>

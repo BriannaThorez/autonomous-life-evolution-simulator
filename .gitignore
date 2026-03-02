@@ -24,11 +24,15 @@ dist-ssr
 
 
 # Custom
-tsc_errors_*
+autonomous-life-evolution-simulator_Blueprint.json
+ALES_Blueprint.json
+tsc_*
 tsc_config.json
 implementation_plan.md
 .geminiignore
 .agent/*
 *.local
-snapshots/
+snapshots/*
+.agent/*
 IgnoreDirectory*
+features.py

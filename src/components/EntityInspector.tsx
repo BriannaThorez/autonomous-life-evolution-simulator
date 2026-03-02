@@ -1,8 +1,8 @@
 import React from 'react';
-import { OrganismData, FloraData, EntityData, TraitName, SimEvent, Vector2 } from '../types';
-import { SIM_CONSTANTS, UNIT_UTILS } from '../src/core/Constants';
-import { getSymbol, getSyntax } from '../src/entities/Fauna/Cognition/SymbolMap';
-import { VectorDB } from '../src/data/VectorDB';
+import { OrganismData, FloraData, EntityData, TraitName, SimEvent, Vector2 } from '../../types';
+import { SIM_CONSTANTS, POPULATION_CONSTANTS, UNIT_UTILS } from '../core/Constants';
+import { getSymbol, getSyntax } from '../entities/Fauna/Cognition/SymbolMap';
+import { VectorDB } from '../data/VectorDB';
 import Tooltip from './Tooltip';
 
 interface Props {
@@ -52,15 +52,24 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
   const s = (stats as any).speed ?? 0;
   const z = (stats as any).size ?? 0;
   const drainTotal = (m * s * z).toFixed(2);
+  // Get Long term memory count
+  const ltMemoryCount = React.useMemo(() => {
+    if (!isFauna) return 0;
+    // Use a direct query if your VectorDB supports it, otherwise find
+    const history = VectorDB.getHistory().find(o => o.id === entity.id);
+    return history?.memories?.length || 0;
+  }, [entity.id, simTime]); // simTime trigger ensures it updates as sim ticks
 
   // 1. Refactor the Memoization Logic
   const relatives = React.useMemo(() => {
-    if (isFlora || !organisms) return [];
+    if (isFlora) return [];
     const fauna = entity as OrganismData;
-
     if (!fauna.surname) return [];
 
-    return organisms
+    // Fallback: if 'organisms' is empty (common when worker handles physics), use VectorDB history
+    const sourcePool = (organisms && organisms.length > 0) ? organisms : (VectorDB.getHistory() as OrganismData[]);
+
+    return sourcePool
       .filter(other => {
         // Robust check: Ensure we aren't comparing to self, and match surnames (case-insensitive)
         const matchesSurname = other.surname?.toLowerCase() === fauna.surname.toLowerCase();
@@ -123,13 +132,14 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
   return (
     <div
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: `${Math.max(10, Math.min(position.x, window.innerWidth - 300))}px`,
+        top: `${Math.max(10, Math.min(position.y, window.innerHeight - 100))}px`,
         position: 'fixed',
-        width: 'fit-content',
-        height: 'fit-content',
-        minWidth: 'content',
-        maxWidth: 'content',
+        width: '16rem', // Stabilized width to prevent layout jitter on expansion
+        height: 'fit-content', // Changed from fit-content for reliable expansion
+        minWidth: '16rem', // Fixed invalid 'content' keyword
+        maxWidth: '16rem',
+        maxHeight: '90vh', // Root level safety cap
         zIndex: 999,
         boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
         border: '1px solid rgba(162, 213, 171, 0.15)',
@@ -159,9 +169,19 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               <div
                 className="text-[var(--text-xl)] font-bold litho-text relative group"
                 style={{
-                  color: isFlora ? '#A2D5AB' : '#ccde89ff', lineHeight: '1.2rem', whiteSpace: 'normal',
-                  paddingLeft: '1rem', textIndent: '-1rem', marginBottom: '0.5rem',
-                  cursor: 'help'
+                  color: isFlora ? '#A2D5AB' : '#ccde89ff',
+                  lineHeight: '1.2rem',
+                  width: '12rem',
+                  whiteSpace: 'normal',
+                  paddingLeft: '1rem',
+                  textIndent: '-1rem',
+                  marginBottom: '0.5rem',
+                  cursor: 'help',
+                  // Add these for the two-line effect:
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                 }}
               >
                 <span
@@ -201,9 +221,14 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
           </button>
         </div>
 
-        {/* Bio Drawer Content (Expands inside the header block) */}
+        {/* 
+            PURPOSE: BIOLOGICAL NARRATIVE (Bio)
+            Provides a generated backstory or ecological context for the entity.
+            INTERACTION: Auto-closes on mouse exit to reduce visual clutter.
+        */}
         {expandedSection === 'bio' && (
           <div
+            onMouseLeave={() => setExpandedSection(null)}
             className="fluid-px-sm fluid-pb-sm animate-fade-in"
             style={{ fontSize: 'var(--text-xs)', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}
           >
@@ -220,33 +245,101 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
         )}
       </div>
 
-      {/* Main Content Area (Single Scrollable Container) */}
-      <div className="fluid-p-sm flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar" style={{ maxHeight: '70vh' }}>
+      {/* 
+          PURPOSE: MAIN DATA MODULES
+          Houses the primary scrollable content including lineage, metabolism, traits, and memories.
+      */}
+      <div className="fluid-p-sm flex flex-col gap-2 overflow-y-auto custom-scrollbar">
 
-        {/* Relatives Section */}
-        {/* Content */}
-        {/* Clan/Relatives Section */}
+        {/* 
+            PURPOSE: CLAN & LINEAGE (House)
+            Displays generational depth and family name. 
+            Fallbacks to VectorDB if active physics are offloaded.
+        */}
         {isFauna && (
-          <div className="fluid-rounded bg-white/[0.02] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
-            <button onClick={() => toggleSection('relatives')} className="w-full flex items-center justify-between fluid-p-sm" style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-              <div className="flex flex-col items-start">
-                <span className="text-[14px] font-black" style={{ color: '#E5EFC1' }}>{(entity as OrganismData).surname}</span>
-                <span className="text-[10px] opacity-30">Gen {(entity as OrganismData).generation}</span>
+          <div
+            className="fluid-rounded transition-all"
+            style={{
+              border: expandedSection === 'relatives' ? '1px solid rgba(162, 213, 171, 0.27)' : '1px solid rgba(255,255,255,0.05)',
+              background: expandedSection === 'relatives' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.02)'
+            }}
+          >
+            <button
+              onClick={() => toggleSection('relatives')}
+              className="w-full fluid-p-sm flex flex-col fluid-gap-xs"
+              style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+            >
+              <div className="flex justify-between items-center w-full">
+                <div className="flex flex-col items-start">
+                  <Tooltip
+                    title="House Lineage"
+                    content="The generational count and house surname of this organism's lineage."
+                    position="top"
+                  >
+                    <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', textTransform: 'uppercase', cursor: 'help' }}>
+                      Generation
+                    </span>
+                  </Tooltip>
+                  <span className="text-[var(--text-sm)] font-black whitespace-nowrap" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
+                    {(entity as OrganismData).generation}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', paddingRight: '0.3rem' }}>
+                    House
+                  </span>
+                  <span className="text-[var(--text-sm)] font-black" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
+                    {(entity as OrganismData).surname}
+                  </span>
+                </div>
               </div>
-              <div style={{ color: '#39AEA9', transform: expandedSection === 'relatives' ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</div>
+              <div className="w-full fluid-rounded-full overflow-hidden" style={{ height: '6px', background: 'rgba(255,255,255,0.05)' }}>
+                <div
+                  className="h-full transition-all duration-500 shadow-glow"
+                  style={{
+                    width: `${Math.min(100, ((entity as OrganismData).energy / POPULATION_CONSTANTS.BIRTH_COST_BASE) * 100)}%`,
+                    // Changes to a pinkish/gold glow when threshold is met
+                    background: (entity as OrganismData).energy >= POPULATION_CONSTANTS.BIRTH_COST_BASE
+                      ? 'rgba(255, 105, 180, 1)'
+                      : 'rgba(109, 242, 235, 1)'
+                  }}
+                />
+              </div>
             </button>
             {expandedSection === 'relatives' && (
-              <div className="fluid-px-sm fluid-pb-sm flex flex-col gap-1 animate-fade-in" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
+              <div
+                className="fluid-px-sm fluid-pb-sm flex flex-col gap-1 animate-fade-in"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem' }}
+              >
                 {relatives.length > 0 ? relatives.map(rel => (
-                  <div key={rel.id} onClick={() => onFocus(rel.id)} className="flex justify-between opacity-60 hover:opacity-100 cursor-pointer text-[11px]" style={{ color: '#A2D5AB' }}>
-                    <span>• {rel.name}</span>
-                    <span className="text-[9px]">VIEW</span>
+                  <div
+                    key={rel.id}
+                    onClick={() => onFocus(rel.id)}
+                    className="flex justify-between items-center fluid-p-xxs px-3 fluid-rounded opacity-60 hover:opacity-100 cursor-pointer text-[11px]"
+                    style={{
+                      background: 'rgba(255,255,255,0.01)',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      color: 'rgba(109, 242, 235, 1)'
+                    }}
+                  >
+                    <span className="flex items-center gap-1">
+                      <span className="opacity-40">•</span>
+                      {rel.name}
+                    </span>
+                    <span className="text-[0.55rem] font-black opacity-30 tracking-widest">VIEW</span>
                   </div>
-                )) : <div className="text-center opacity-20 italic text-[10px]">No living kin nearby</div>}
+                )) : (
+                  <div className="text-center opacity-20 italic text-[0.6rem] py-2 uppercase tracking-widest">No living members found</div>
+                )}
               </div>
             )}
           </div>
         )}
+
+        {/* 
+            PURPOSE: METABOLISM & ENERGY SINK
+            Calculates real-time energy drain (Fauna) or maturity yield (Flora).
+        */}
         <div
           className="fluid-rounded transition-all"
           style={{
@@ -266,25 +359,25 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                   content={isFlora ? "Plants yield energy based on their current growth state. 1.0 = Max Nutrients." : "Energy consumption is calculated as (Metabolism % × Current Speed × Body Size)."}
                   position="top"
                 >
-                  <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', cursor: 'help' }}>
+                  <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', textTransform: 'uppercase', cursor: 'help' }}>
                     {isFlora ? "Yield Potential" : "Metabolism"}
                   </span>
                 </Tooltip>
-                <span className="text-[var(--text-sm)] font-black" style={{ color: '#39AEA9', fontFamily: 'monospace' }}>
+                <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
                   {isFlora
-                    ? (Math.floor(entity.energyValue * entity.growthState))
+                    ? (Math.floor((entity as FloraData).energyValue * (entity as FloraData).growthState))
                     : drainTotal
                   }
                   <span style={{ fontSize: 'var(--text-xs)', opacity: 0.5 }}>{isFlora ? " Energy" : " E/s"}</span>
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>
+                <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', paddingRight: '0.3rem' }}>
                   {isFlora ? "Maturity" : "Energy"}
                 </span>
                 <span className="text-[var(--text-sm)] font-black" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
                   {isFlora
-                    ? (entity.growthState * 100).toFixed(0) + "%"
+                    ? ((entity as FloraData).growthState * 100).toFixed(0) + "%"
                     : Math.floor((entity as OrganismData).energy)
                   }
                 </span>
@@ -294,7 +387,7 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               <div
                 className="h-full transition-all duration-500 shadow-glow"
                 style={{
-                  width: `${isFlora ? (entity.growthState * 100) : Math.min(100, ((entity as OrganismData).energy / 30000) * 100)}%`,
+                  width: `${isFlora ? ((entity as FloraData).growthState * 100) : Math.min(100, ((entity as OrganismData).energy / 30000) * 100)}%`,
                   background: isFlora ? '#A2D5AB' : '#39AEA9'
                 }}
               />
@@ -317,18 +410,22 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                 </div>
               ) : (
                 <div className="grid grid-cols-1 font-bold" style={{ gap: '4px', fontSize: 'var(--text-xs)', color: 'rgba(255,255,255,0.3)' }}>
-                  <div className="flex justify-between"><span>Base Harvest</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>{entity.energyValue} Energy</span></div>
-                  <div className="flex justify-between"><span>Growth Scalar</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>× {entity.growthState.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Base Harvest</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>{(entity as FloraData).energyValue} Energy</span></div>
+                  <div className="flex justify-between"><span>Growth Scalar</span><span style={{ color: 'rgba(255,255,255,0.6)' }}>× {(entity as FloraData).growthState.toFixed(2)}</span></div>
                   <div className="flex justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '4px', paddingTop: '4px', color: '#A2D5AB' }}>
                     <span>Current Energy Payoff</span>
-                    <span>{Math.floor(entity.energyValue * entity.growthState)} Energy</span>
+                    <span>{Math.floor((entity as FloraData).energyValue * (entity as FloraData).growthState)} Energy</span>
                   </div>
                 </div>
               )}
             </div>
           )}
         </div>
-        {/* Traits Grid */}
+
+        {/* 
+            PURPOSE: GENETIC TRAITS (Genome)
+            Visualizes expressed stats vs. underlying alleles (alleles visible as dual-bar indicators).
+        */}
         <div className="grid grid-cols-1 fluid-gap-xs">
           {isFauna ? (Object.keys(traitConfig) as TraitName[]).map(trait => {
             const fauna = entity as OrganismData;
@@ -369,10 +466,10 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               </Tooltip>
             );
           }) : [
-            { id: 'ratio', name: 'Growth Rate', icon: '🌱', val: (entity.genome.traits.structure.v1 * SIM_CONSTANTS.FRAMES_PER_DAY * 100).toFixed(2), unit: '%', desc: 'The daily expansion speed of this organism relative to the simulation seasonal cycle.' },
-            { id: 'nodes', name: 'Structural Segments', icon: '🌿', val: entity.genome.traits.structure.v2.toFixed(0), unit: ' Segments', desc: 'The branching complexity of the organism. More segments lead to higher energy density.' },
-            { id: 'stem', name: 'Stem Mass', icon: '🌳', val: entity.genome.traits.ecology.v2.toFixed(1), unit: ' mm', desc: 'The physical thickness of the main structure, contributing to overall survival and nutrient yield.' },
-            { id: 'leaf', name: 'Surface Area', icon: '🍀', val: entity.genome.traits.morphology.v1.toFixed(1), unit: ' Scale', desc: 'The scale of leaf structures that capture energy from the environment.' }
+            { id: 'ratio', name: 'Growth Rate', icon: '🌱', val: ((entity as FloraData).genome.traits.structure.v1 * 24 * 100).toFixed(2), unit: '%', desc: 'The daily expansion speed of this organism relative to the simulation seasonal cycle.' },
+            { id: 'nodes', name: 'Structural Segments', icon: '🌿', val: (entity as FloraData).genome.traits.structure.v2.toFixed(0), unit: ' Segments', desc: 'The branching complexity of the organism. More segments lead to higher energy density.' },
+            { id: 'stem', name: 'Stem Mass', icon: '🌳', val: (entity as FloraData).genome.traits.ecology.v2.toFixed(1), unit: ' mm', desc: 'The physical thickness of the main structure, contributing to overall survival and nutrient yield.' },
+            { id: 'leaf', name: 'Surface Area', icon: '🍀', val: (entity as FloraData).genome.traits.morphology.v1.toFixed(1), unit: ' Scale', desc: 'The scale of leaf structures that capture energy from the environment.' }
           ].map(trait => (
             <Tooltip key={trait.id} title={trait.name} content={trait.desc} position="left">
               <div className="flex items-center justify-between fluid-p-xs fluid-rounded" style={{ paddingLeft: '0.75rem', paddingRight: '0.75rem', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(162, 213, 171, 0.05)', cursor: 'help' }}>
@@ -390,10 +487,14 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
           ))}
         </div>
 
+        {/* 
+            PURPOSE: NEURAL RECORDS (Memories)
+            Short-term (ST) and Long-term (LT) memory lists. ST items use ideographic syntax maps.
+        */}
         {isFauna && (
-          <div style={{ marginTop: '0.2rem' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: '0.5rem' }}>
-              <div className="text-[var(--text-xs)] font-black flex items-center" style={{ color: '#A2D5AB', opacity: 0.3, gap: '8px' }}>
+          <div style={{ marginTop: '0.3rem' }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: '0.3rem' }}>
+              <div className="text-[var(--text-xs)] font-black flex items-center" style={{ color: 'rgba(109, 242, 235, 1)', opacity: 0.5, gap: '8px' }}>
                 <span>🧠</span> Memories
               </div>
               <div className="flex gap-2">
@@ -407,7 +508,6 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                     color: '#39AEA9',
                     fontSize: '0.55rem',
                     fontWeight: 900,
-                    textTransform: 'uppercase'
                   }}
                 >
                   ST: {(entity as OrganismData).memories.length}
@@ -422,37 +522,54 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                     color: '#A2D5AB',
                     fontSize: '0.55rem',
                     fontWeight: 900,
-                    textTransform: 'uppercase'
                   }}
                 >
-                  LT: {VectorDB.getHistory().find(o => o.id === entity.id)?.memories?.length || 0}
+                  LT: {ltMemoryCount}
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1 custom-scrollbar" style={{ maxHeight: '20rem', overflowY: 'auto', paddingRight: '4px' }}>
+            <div className="grid grid-cols-2 gap-x-1 gap-y-1 custom-scrollbar" style={{
+              height: '5rem', // Fixed height for ~3 rows 
+              minHeight: '5rem',
+              overflowY: 'scroll',
+              paddingRight: '0.3rem'
+            }}>
               {(entity as OrganismData).memories.length > 0 ? (
                 (entity as OrganismData).memories.slice().reverse().map(memory => (
                   <div
                     key={memory.id}
-                    className="fluid-p-xs fluid-rounded flex justify-between items-center group transition-all"
-                    style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', fontSize: 'var(--text-xs)', color: 'rgba(255,255,255,0.4)' }}
+                    className="fluid-p-xxs fluid-rounded flex justify-between items-center group transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.01)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      fontSize: 'var(--text-sm)',
+                      color: 'rgba(255,255,255,0.6)',
+                      height: '1.05rem' // Uniform row height
+                    }}
                   >
+                    {/* first memory column: lithograph */}
                     <Tooltip title={(memory.entityIds?.length || 0) > 1 ? "👥 Group" : "Memory"} content={getGroupNamesTooltip(memory)}>
-                      <div className="flex items-center gap-2 truncate flex-1" style={{ minWidth: 0 }}>
-                        <span className="whitespace-nowrap litho-text flex-shrink-0" style={{ fontSize: '1rem' }}>{getMemorySyntaxStr(memory)}</span> {/* first memory column: lithograph */}
-                        <span className="truncate group-hover-visible-text transition-all">
-                          {memory.content}
-                          {memory.count && memory.count > 1 && (
-                            <span style={{ color: '#39AEA9', marginLeft: '4px', fontWeight: 'bold' }}>x{memory.count}</span>
-                          )}
-                        </span>
+                      <div className="flex items-center gap-0.5"
+                        style={{
+                          minWidth: 0,
+                        }}>
+                        {/*ideographic Icon section*/}
+                        <span className="whitespace-nowrap litho-text flex-shrink-0 flex items-center justify-center"
+                          style={{
+                            fontSize: '1.0rem', // Amplified scale
+                            height: 'auto',
+                            width: 'auto',    // Fixed gutter
+                            whiteSpace: 'nowrap',
+                            justifyContent: 'left',
+                          }}>{getMemorySyntaxStr(memory)}</span> {/* first memory column: lithograph */}
                       </div>
                     </Tooltip>
-                    <span className="opacity-20 font-black whitespace-nowrap text-right flex-shrink-0" style={{ fontSize: '0.5rem', width: '5rem' }}>{UNIT_UTILS.toDays(simTime - memory.timestamp).toFixed(1)}d</span> {/* second memory column: age */}
+                    {/* second memory column: age */}
+                    <span className="opacity-20 font-black whitespace-nowrap text-right flex-shrink-0" style={{ fontSize: '0.5rem', width: '3rem' }}>{UNIT_UTILS.toDays(simTime - memory.timestamp).toFixed(1)}d</span>
                   </div>
                 ))
               ) : (
-                <div className="italic text-center tracking-widest uppercase" style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.1)', padding: '1rem 0' }}>No neural records found</div>
+                <div className="col-span-2 italic text-center tracking-widest uppercase flex items-center justify-center" style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.1)', height: '100%', minHeight: '5rem' }}>No neural records found</div>
               )}
             </div>
           </div>
@@ -460,12 +577,12 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
 
       </div>
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 1px; } 
+        .custom-scrollbar::-webkit-scrollbar { width: 0.2rem; } 
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
-        .hover-opacity-100:hover { opacity: 1 !important; }
+        .hover-opacity-100:hover { opacity: 0.8 !important; }
         .group:hover .group-hover-visible-text { white-space: normal !important; max-width: 100% !important; }
       `}</style>
-    </div>
+    </div >
   );
 };
 

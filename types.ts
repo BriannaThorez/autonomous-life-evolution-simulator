@@ -30,7 +30,7 @@ export interface EntityStats {
 
 export interface Memory {
   id: string;
-  type: 'Flora' | 'MATE' | 'THREAT' | 'FoodLocation' | 'FaunaLocation' | 'SectorScan';
+  type: 'Flora' | 'MATE' | 'THREAT' | 'Food' | 'Fauna' | 'SectorScan';
   position: Vector2;
   timestamp: number;
   duration: number; // Ticks until forgotten
@@ -71,6 +71,8 @@ export interface OrganismData {
   // Communication & Perception
   lastVocalTick?: number; // To enforce communication cooldowns (industry standard rate-limiting)
   lastPerceptionTick?: number; // Rate-limit for adding "Saw" memories
+  isHearingActive?: boolean; // Ephemeral flag for WebGL audio overlay
+  isTransmittingActive?: boolean; // Ephemeral flag for WebGL comms overlay
 }
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { SimulationEngine } from './src/core/SimulationEngine';
-import { VectorDB } from './src/data/VectorDB';
+import { SimulationEngine } from './core/SimulationEngine';
+import { VectorDB } from './data/VectorDB';
 import SimulationCanvas from './components/SimulationCanvas';
 import EntityInspector from './components/EntityInspector';
 import VectorDBVisualizer from './components/VectorDBVisualizer';
@@ -9,11 +9,12 @@ import ChronosHUD from './components/ChronosHUD';
 import ApexRegistry from './components/ApexRegistry';
 import SettingsModal from './components/SettingsModal';
 import ResetModal from './components/ResetModal';
-import DebugDropdown from './components/DebugDropdown';
+import SensoryDropdown from './components/SensoryDropdown';
 import Tooltip from './components/Tooltip';
-import { SimulationState, Vector2 } from './types';
-import { SIM_CONSTANTS, SEASON_THEMES, WORLD_CONSTANTS } from './src/core/Constants';
-import { ScaleUtils } from './src/rendering/ScaleUtils';
+import ChatAssistant from './components/ChatAssistant/ChatAssistant';
+import { SimulationState, Vector2 } from '../types';
+import { SIM_CONSTANTS, SEASON_THEMES, WORLD_CONSTANTS } from './core/Constants';
+import { ScaleUtils } from './rendering/ScaleUtils';
 import './styles/GlobalSpacing.css';
 
 /**
@@ -115,7 +116,7 @@ const App: React.FC<AppProps> = ({ savedState }) => {
 
     useEffect(() => {
         // Initialize Worker
-        const w = new Worker(new URL('./src/worker/sim.worker.ts', import.meta.url), { type: 'module' });
+        const w = new Worker(new URL('./worker/sim.worker.ts', import.meta.url), { type: 'module' });
         setWorker(w);
 
         w.onmessage = (e) => {
@@ -129,9 +130,9 @@ const App: React.FC<AppProps> = ({ savedState }) => {
             } else if (type === 'LOG') {
                 console.log(`[SimWorker] ${data}`);
             } else if (type === 'REGISTRY_LOG') {
-                console.log(`[Registry] ${data}`);
-            } else if (type === 'REGISTRY_DEATH') {
                 VectorDB.addHistory(data);
+            } else if (type === 'REGISTRY_DEATH') {
+                VectorDB.markDeceased(e.data.id, data);
             } else if (type === 'SAVE_REQUIRED') {
                 latestWorkerState.current = data;
                 VectorDB.saveSimState(data); // Direct save — no engine middleman
@@ -175,6 +176,7 @@ const App: React.FC<AppProps> = ({ savedState }) => {
 
     return (
         <div className="relative w-full h-screen select-none overflow-hidden" style={{ background: '#050505', color: '#e2e8f0' }}>
+            <ChatAssistant simState={simState} />
             {worker && (
                 <SimulationCanvas
                     worker={worker}
@@ -203,22 +205,21 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                 }}
             >
 
-                {/* Top-Right Controls */}
-                <div className="absolute flex flex-col items-end fluid-gap-xs" style={{ top: 'var(--fluid-space-sm)', right: 'var(--fluid-space-sm)' }}>
-                    <div className="flex fluid-gap-xs pointer-events-auto">
+                <div className="absolute flex flex-col items-end gap-3" style={{ top: '1rem', right: '1rem' }}>
+                    <div className="flex gap-3 pointer-events-auto items-stretch h-12">
                         <Tooltip title="Neural Registry" content="Browse the full historical record of every entity that has existed in the simulation." position="left">
                             <button
                                 onClick={() => setShowVectorDB(true)}
-                                className="glass-modular fluid-p-sm fluid-rounded flex items-center fluid-gap-xs transition-all"
-                                style={{ border: '1px solid rgba(57, 174, 169, 0.2)' }}
+                                className="glass-modular px-5 rounded flex items-center gap-3 transition-all h-full"
+                                style={{ border: '1px solid rgba(57, 174, 169, 0.3)' }}
                             >
-                                <div className="fluid-rounded-full shadow-glow" style={{ width: '6px', height: '6px', background: '#39AEA9' }} />
-                                <span className="text-[var(--text-xs)] font-black tracking-widest litho-text uppercase">Registry</span>
+                                <div className="rounded-full shadow-glow" style={{ width: '8px', height: '8px', background: '#39AEA9' }} />
+                                <span className="text-[0.75rem] font-black tracking-[0.2em] litho-text uppercase">Registry</span>
                             </button>
                         </Tooltip>
 
-                        <div className="pointer-events-auto" style={{ zIndex: 1000 }}>
-                            <DebugDropdown
+                        <div className="pointer-events-auto h-full" style={{ zIndex: 1000 }}>
+                            <SensoryDropdown
                                 showMasterDebug={showMasterDebug}
                                 onToggleMasterDebug={setShowMasterDebug}
                                 showVision={showVision}
@@ -235,10 +236,10 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                         <Tooltip title="Engine Settings" content="Configure visual scaling, simulation speed, and master reset parameters." position="left">
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="glass-modular fluid-p-sm fluid-rounded flex items-center justify-center transition-all"
-                                style={{ border: '1px solid rgba(162, 213, 171, 0.13)' }}
+                                className="glass-modular px-4 rounded flex items-center justify-center transition-all h-full"
+                                style={{ border: '1px solid rgba(162, 213, 171, 0.2)' }}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A2D5AB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A2D5AB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
                             </button>
                         </Tooltip>
                     </div>
@@ -262,6 +263,10 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                         }}
                         sort={apexSort}
                         onSortChange={setApexSort}
+                        onFocus={(id) => {
+                            const target = simState.organisms.find(o => o.id === id);
+                            if (target) setTargetFocus({ x: target.position.x, y: target.position.y });
+                        }}
                     />
                 </div>
 
@@ -303,20 +308,6 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                     onCancel={() => setResetConfirm(false)}
                 />
 
-                {showVectorDB && (
-                    <VectorDBVisualizer
-                        config={engine.config}
-                        onUpdateConfig={(newConfig) => engine.updateConfig(newConfig)}
-                        onHardReset={handleMasterReset}
-                        onClose={() => {
-                            setShowVectorDB(false);
-                            setRegistryFocusId(null);
-                        }}
-                        initialSurnameFilter={surnameFilter}
-                        initialSelectedId={registryFocusId}
-                    />
-                )}
-
                 {/* Bottom Notification Panel */}
                 <div className="absolute pointer-events-auto" style={{ bottom: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)' }}>
                     <NotificationPanel
@@ -353,6 +344,20 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                         VDB: {VectorDB.saveCount} saves • {VectorDB.lastSaveOrgCount} orgs • {VectorDB.lastSaveMs.toFixed(0)}ms
                     </div>
                 </div>
+
+                {showVectorDB && (
+                    <VectorDBVisualizer
+                        config={(engine as any).config}
+                        onUpdateConfig={(newConfig) => (engine as any).updateConfig(newConfig)}
+                        onHardReset={handleMasterReset}
+                        onClose={() => {
+                            setShowVectorDB(false);
+                            setRegistryFocusId(null);
+                        }}
+                        initialSurnameFilter={surnameFilter}
+                        initialSelectedId={registryFocusId}
+                    />
+                )}
             </div>
         </div>
     );

@@ -2,16 +2,16 @@
     /* Forces 1rem to always be exactly 20px, ignoring Windows scaling */
     /* Automatically matches browser base size (usually 16px) 
        but clamps it so Windows scaling can't push it past 20px. */
-    font-size: clamp(14px, 1.2vw, 20px);
+    font-size: clamp(14px, 0.6rem, 10px);
     /* Fluid Scaling Units */
-    --fluid-space-xs: clamp(0.125rem, 1%, 0.15rem);
-    --fluid-space-sm: clamp(0.25rem, 1.5%, 0.3rem);
-    --fluid-space-md: clamp(0.5rem, 2%, 0.55rem);
-    --fluid-space-lg: clamp(0.75rem, 3%, 0.85rem);
-    --fluid-space-xl: clamp(1rem, 5%, 1.15rem);
+    --fluid-space-xs: clamp(0.065rem, 1%, 0.095rem);
+    --fluid-space-sm: clamp(0.125rem, 1.5%, 0.185rem);
+    --fluid-space-md: clamp(0.25rem, 2%, 0.375rem);
+    --fluid-space-lg: clamp(0.375rem, 3%, 0.565rem);
+    --fluid-space-xl: clamp(0.5rem, 5%, 0.85rem);
 
-    --fluid-radius: clamp(0.25rem, 2%, 0.75rem);
-    --fluid-radius-lg: clamp(0.5rem, 4%, 1.5rem);
+    --fluid-radius: clamp(0.065rem, 2%, 0.085rem);
+    --fluid-radius-lg: clamp(0.125rem, 4%, 0.375rem);
 
     /* Text Clamps for High-Res Consistency */
     --text-xs: clamp(0.4rem, 0.8%, 0.5rem);

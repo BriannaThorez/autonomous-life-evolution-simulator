@@ -1,3 +1,4 @@
+import { TraitName } from '../../types';
 
 // --- WORLD SPACE ---
 export const WORLD_CONSTANTS = {
@@ -34,55 +35,104 @@ export const SIM_CONSTANTS = {
     FRAMES_PER_SEASON: 36000,       // 1800 * 20
     FRAMES_PER_CYCLE: 144000,       // 36000 * 4
 
-
     // Interaction Constants
     COMM_COOLDOWN_TICKS: 300,        // ~5 seconds cooldown between vocalizations
 };
-// --- COGNITIVE CONSTANTS ---
-export const COGNITIVE_CONSTANTS = {
-    // Memory Management
-    DAYS_TO_REMEMBER: 1,
-    // Short-term memory (Disappears on refresh)
-    TEMPORARY_MEMORY_LIMIT: 100, //Priority-Based Garbage Collection in MemorySystem.ts
-    // Long-term memory (Saved to VectorDB)
-    PERSISTENT_MEMORY_LIMIT: 100, //Time-Based Truncation in VectorDB.ts
-    // Family Tree / Graveyard memories
-    HISTORICAL_MEMORY_LIMIT: 50,
+
+// --- HOURLY EVALUATION LOGIC ---
+export const CHRONOS_UTILS = {
+    /**
+     * Checks if the current frame corresponds to a biological 'hour' transition.
+     * All major ecological updates (growth, spreading, random spawning) should use this.
+     */
+    isHourlyTick: (time: number) => time % SIM_CONSTANTS.FRAMES_PER_HOUR === 0,
 };
 
+// --- COGNITIVE & SENSORY CONSTANTS ---
+export const COGNITIVE_CONSTANTS = {
+    // Memory Management
+    DAYS_TO_REMEMBER: 12,
+    TEMPORARY_MEMORY_LIMIT: 200,
+    PERSISTENT_MEMORY_LIMIT: 200,
+    HISTORICAL_MEMORY_LIMIT: 100,
+};
 
-// --- POPULATION CONSTANTS ---
+export const SENSORY_CONSTANTS = {
+    PERCEPTION_COOLDOWN_TICKS: 60, // 1s at 60fps
+    FOOD_MEMORY_ENERGY_THRESHOLD: 100,
+    MEMORY_CONFIDENCE_PENALTY: 0.8,
+    FOOD_DESIRABILITY_DISTANCE_WEIGHT: 1.0,
+    MEMORY_PRUNING_RADIUS_METERS: 15,
+};
+
+// --- SOCIAL & NOBILITY CONSTANTS ---
+export const SOCIAL_CONSTANTS = {
+    NOBILITY_MATING_THRESHOLD: 10,
+    NOBILITY_AGE_THRESHOLD_DAYS: 1,
+    PROLIFIC_MATING_THRESHOLD: 5,
+    ELDER_AGE_MULTIPLIER: 2,
+};
+
+export const LINGUISTIC_CONSTANTS = {
+    NAME_INHERITANCE_CHANCE: 0.05,
+    FIRST_NAME_SYLLABLES_MIN: 2,
+    FIRST_NAME_SYLLABLES_RANGE: 3,
+    SURNAME_SYLLABLES_MIN: 2,
+    SURNAME_SYLLABLES_RANGE: 4,
+};
+
+export const GENETIC_CONSTANTS = {
+    MUTATION_STRENGTH: 0.12,
+    PHYSICAL_LIMITS: {
+        speed: [0.1, 5.0],
+        size: [2, 150],
+        metabolism: [0.1, 5.0],
+        sight_range: [2, 100],
+        sight_fov: [0.1, Math.PI * 2],
+        lifespan: [100, 1000 * (60 * 60 * 24)],
+        audible_range: [1.0, 20.0],
+        communicating_range: [0.5, 10.0]
+    }
+};
+
+// --- POPULATION & REPRODUCTION CONSTANTS ---
 export const POPULATION_CONSTANTS = {
     INITIAL_ORGANISMS: 20,
     INITIAL_FLORA: 90,
-    FLORA_SPAWN_RATE: 0.10,
     BLOOM_COUNT_MIN: 10,
     BLOOM_COUNT_MAX: 20,
-    BIRTH_COST: 10000, // 5000 from each parent
-    INITIAL_ENERGY: [2500, 3000] as [number, number],
-    MAX_ENERGY: 30000,
+    // BIRTH_COST_BASE operates as the total systemic energy required to construct a new lifeform.
+    // It is subtracted from the mother upon birth to pay for the initial energy mass of the child.
+    BIRTH_COST_BASE: 25000,
+    INITIAL_ENERGY: [7000, 8000] as [number, number],
+
+    // MATING_ENERGY_THRESHOLD dictates the baseline energy required just to initiate the courting/mating process.
+    // It is significantly lower than BIRTH_COST_BASE because organisms do not immediately give birth upon mating.
+    MATING_ENERGY_THRESHOLD: 20000,
+    MATING_BOND_DURATION_HOURS: 2.5, // 0.5 Game Hours (computed against FRAMES_PER_HOUR dynamically)
 };
 
-// --- ECOLOGICAL BALANCE (FLORA) ---
-export const FLORA_CONSTANTS = {
-    // Foundational Multipliers (Central Balancing Knobs)
-    NUTRIENT_BASE_MULTIPLIER: 2500,      // Primary energy 'floor' for all flora
-    MASS_TO_ENERGY_SCALAR: 40.0,          // How much physical mass converts to energy
-    GROWTH_MASS_PENALTY: 0.15,           // How much structural mass slows growth
-
-    // Environmental Modifiers
-    BIOME_GRASS_GROWTH: 1.0,             // Nutrient rich soil
-    BIOME_ARID_GROWTH: 0.1,              // Harsh conditions
-    PROXIMITY_DENSITY_BONUS: 2.5,        // Growth acceleration in clusters
-
-    // Spreading & Density Logic
-    CLUSTER_SEARCH_RADIUS_METERS: 1.2,
-    CLUSTER_MIN_NEIGHBORS: 2,
-    CLUSTER_MAX_NEIGHBORS: 5,
-    CLUSTER_GROWTH_RATE: 2.1,            // Chance per hour to spread
-    CLUSTER_SPAWN_DISTANCE_MIN: 0.2,
-    CLUSTER_SPAWN_DISTANCE_MAX: 0.5,
+export const REPRODUCTION_CONSTANTS = {
+    TRAIT_SURCHARGE_SPEED_WEIGHT: 150,
+    TRAIT_SURCHARGE_SIZE_WEIGHT: 5,
+    TRAIT_SURCHARGE_SIGHT_RANGE_WEIGHT: 20,
+    TRAIT_SURCHARGE_SIGHT_FOV_WEIGHT: 1, // Per degree
+    TRAIT_SURCHARGE_LIFESPAN_WEIGHT: 0.0001,
 };
+
+// --- DEFAULT GENETIC RANGES ---
+export const DEFAULT_TRAIT_RANGES: Record<TraitName, [number, number]> = {
+    speed: [1.2, 1.5],
+    size: [75, 85],
+    metabolism: [0.4, 0.5],
+    sight_range: [15, 18],
+    sight_fov: [(85 * Math.PI) / 180, (95 * Math.PI) / 180],
+    lifespan: [72000, 108000], // 40-60 days
+    audible_range: [3.5, 4.5],
+    communicating_range: [2.5, 3.5],
+};
+
+// --- FLORA ECOLOGICAL BALANCE MOVED TO SPECIFIC DNA PROFILES ---
 
 export const SEASON_THEMES = [
     { name: "Aeon-Vahr", color: "#4ade80", description: "The Rising Pulse", bloomFactor: 1.2 },

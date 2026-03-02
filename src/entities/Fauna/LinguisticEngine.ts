@@ -1,5 +1,6 @@
 import { OrganismData } from '../../../types';
 import { VectorDB } from '../../data/VectorDB';
+import { LINGUISTIC_CONSTANTS, SOCIAL_CONSTANTS } from '../../core/Constants';
 
 const SYLLABLES = [
     'ber', 'thun', 'dra', 'vor', 'xan', 'morth', 'kael', 'lyn', 'val', 'nor',
@@ -9,7 +10,6 @@ const SYLLABLES = [
     'und', 'vex', 'wyn', 'xir', 'yor', 'zal'
 ];
 
-// Simplified Markov transitions: vowels tend to follow consonants and vice versa
 const VOWELS = ['a', 'e', 'i', 'o', 'u', 'y'];
 const SYLLABLE_WEIGHTS: Record<string, string[]> = {
     'ber': ['thun', 'dra', 'vance', 'lyn', 'is'],
@@ -36,12 +36,12 @@ export class LinguisticEngine {
     }
 
     static generateFirstName(): string {
-        const syllables = Math.floor(Math.random() * 3) + 2; // 2-4 syllables
+        const syllables = Math.floor(Math.random() * LINGUISTIC_CONSTANTS.FIRST_NAME_SYLLABLES_RANGE) + LINGUISTIC_CONSTANTS.FIRST_NAME_SYLLABLES_MIN;
         return this.generatePhoneticName(syllables);
     }
 
     static generateSurname(): string {
-        const syllables = Math.floor(Math.random() * 4) + 2; // 2-5 syllables
+        const syllables = Math.floor(Math.random() * LINGUISTIC_CONSTANTS.SURNAME_SYLLABLES_RANGE) + LINGUISTIC_CONSTANTS.SURNAME_SYLLABLES_MIN;
         return this.generatePhoneticName(syllables);
     }
 
@@ -74,7 +74,6 @@ export class LinguisticEngine {
 
         // Inheritance Rules
         if (parentA) {
-            // Surname Logic: 100% inherited, 50/50 split
             if (parentB) {
                 surname = Math.random() > 0.5 ? parentA.surname : parentB.surname;
                 lineageDescription = `Inherited the ${surname} name from the union of ${parentA.firstName} and ${parentB.firstName}.`;
@@ -89,30 +88,16 @@ export class LinguisticEngine {
                 isNoble = parentA.isNoble || false;
             }
 
-            // Rare Full Name Inheritance (2-5% chance)
-            if (Math.random() < 0.05) {
+            // Name Inheritance
+            if (Math.random() < LINGUISTIC_CONSTANTS.NAME_INHERITANCE_CHANCE) {
                 firstName = parentA.firstName;
                 surname = parentA.surname;
 
-                // Numerology
                 const familyCount = VectorDB.getFamilyCount(firstName, surname);
                 const suffix = familyCount + 1;
-
-                // Standard limit: IV (unless Nobility)
                 const isNobleEntity = isNoble || (parentA && parentA.isNoble);
-                const canProceed = true;
 
-                let displaySuffix = "";
-                if (canProceed) {
-                    displaySuffix = suffix > 1 ? ` ${this.romanize(suffix)}` : "";
-                } else {
-                    // Reset name if cap reached? No, prompt says "Capped by decay weights"
-                    // We'll interpret this as: if not noble, we don't increment beyond IV easily, 
-                    // or we just don't inherit the name. 
-                    // Let's generate a fresh name instead.
-                    firstName = this.generateFirstName();
-                }
-
+                const displaySuffix = suffix > 1 ? ` ${this.romanize(suffix)}` : "";
                 const fullName = `${firstName} ${surname}${displaySuffix}`;
 
                 return {
@@ -139,21 +124,17 @@ export class LinguisticEngine {
     }
 
     static getTitle(org: OrganismData, populationStats: { meanAge: number, speed95th: number }): string | undefined {
-        // The Noble
         if (org.isNoble) return "The Noble";
 
-        // The Elder
         if (org.age > populationStats.meanAge * 2) {
             return "The Elder";
         }
 
-        // The Swift
         if (org.expressedStats.speed > populationStats.speed95th) {
             return "The Swift";
         }
 
-        // The Prolific
-        if (org.matingCount > 5) {
+        if (org.matingCount > SOCIAL_CONSTANTS.PROLIFIC_MATING_THRESHOLD) {
             return "The Prolific";
         }
 

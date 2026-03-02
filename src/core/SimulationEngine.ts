@@ -1,16 +1,16 @@
-
 import { Vector2, SimulationState, OrganismData, FloraData, SimEvent, SimConfig, Genome } from '../../types';
 import { VectorMath } from './VectorMath';
-import { Genetics as GeneticsEngine, DEFAULT_TRAIT_RANGES } from '../evolution/GeneticsEngine';
+import { Genetics as GeneticsEngine } from '../evolution/GeneticsEngine';
 import { Metabolism } from '../entities/Fauna/Metabolism';
 import { VectorDB } from '../data/VectorDB';
 import { LinguisticEngine } from '../entities/Fauna/LinguisticEngine';
 import { SpatialGrid } from './SpatialGrid';
 import { TerrainManager } from './TerrainManager';
-import { SIM_CONSTANTS, UNIT_UTILS, WORLD_CONSTANTS, POPULATION_CONSTANTS, FLORA_CONSTANTS } from './Constants';
+import { SIM_CONSTANTS, UNIT_UTILS, WORLD_CONSTANTS, POPULATION_CONSTANTS, CHRONOS_UTILS, DEFAULT_TRAIT_RANGES } from './Constants';
 import { Fauna } from '../entities/Fauna/Base';
 import { Flora } from '../entities/Flora/Base';
 import { FernLogic } from '../entities/Flora/Fern/Logic';
+import { FERN_DNA_PROFILE } from '../entities/Flora/Fern/DNAProfile';
 import { SpeciesALogic } from '../entities/Fauna/SpeciesA/Logic';
 import { SPECIES_A_DNA } from '../entities/Fauna/SpeciesA/DNAProfile';
 import { ReproductionEngine } from '../entities/Fauna/ReproductionEngine';
@@ -32,9 +32,6 @@ export class SimulationEngine {
   };
 
   constructor(width: number, height: number, initialState?: SimulationState) {
-    // ⚠️ State loading from VectorDB is async (IndexedDB) and handled by the caller.
-    // In App.tsx: `await VectorDB.loadSimState()` runs before engine creation.
-    // In worker: initialState is always provided via the INIT message from main thread.
     const savedState = initialState || null;
 
     if (savedState) {
@@ -79,8 +76,6 @@ export class SimulationEngine {
       // Ensure all Organisms have valid genomes & upgraded traits
       if (this.state.organisms) {
         this.state.organisms.forEach(o => {
-          // Deep Self-Healing: Check for missing genome OR missing traits
-          // (Data from old versions or tokenization errors might have genome={} but no traits)
           if (!o.genome || !o.genome.traits || Object.keys(o.genome.traits).length === 0) {
             console.warn(`SimEngine: Healed CORRUPT genome for organism ${o.id}`, o.genome);
             o.genome = GeneticsEngine.createRandomGenome(this.state.config);
@@ -111,7 +106,6 @@ export class SimulationEngine {
       };
     }
 
-    // Initialize Subsystems with derived state/dimensions
     const w = this.state.worldSize.x;
     const h = this.state.worldSize.y;
     this.terrain = new TerrainManager(w, h, this.state.seed);
@@ -132,7 +126,6 @@ export class SimulationEngine {
       this.spawnOrganism();
     }
     for (let i = 0; i < POPULATION_CONSTANTS.INITIAL_FLORA; i++) {
-      // Spawn closer to maturity (0.4 to 0.9) to simulate established ecosystem
       const randomMaturity = 0.4 + Math.random() * 0.5;
       this.spawnFlora(undefined, undefined, randomMaturity);
     }
@@ -166,12 +159,11 @@ export class SimulationEngine {
     parentA?: OrganismData,
     parentB?: OrganismData,
     position?: Vector2,
-    initialEnergy?: number, // Argument 4
-    childGenome?: Genome    // Argument 5
+    initialEnergy?: number,
+    childGenome?: Genome
   ) {
-    // 1. Use the passed genome if available, otherwise generate/mix/mutate as before
     const genome = childGenome || (parentA
-      ? (parentB ? GeneticsEngine.recombine(parentA.genome, parentB.genome) : GeneticsEngine.mutate(parentA.genome, this.state.config))
+      ? (parentB ? GeneticsEngine.recombine(parentA.genome, parentB.genome) : (() => { throw new Error("Asexual reproduction is disabled."); })())
       : GeneticsEngine.createRandomGenome(this.state.config));
 
     const expressedStats = GeneticsEngine.express(genome);
@@ -185,16 +177,13 @@ export class SimulationEngine {
       position: position || this.terrain.getSafeSpawnPos(),
       velocity: { x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2 },
       heading: VectorMath.normalize({ x: Math.random() - 0.5, y: Math.random() - 0.5 }),
-
-      // 2. Use the dynamic initialEnergy from ReproductionEngine if provided
       energy: initialEnergy !== undefined
         ? initialEnergy
         : (parentA ? 400 : (this.state.config.initialEnergy[0] + Math.random() * (this.state.config.initialEnergy[1] - this.state.config.initialEnergy[0]))),
-
       age: 0,
       genome,
       expressedStats,
-      color: parentA ? parentA.color : `hsl(${Math.random() * 360}, 70%, 60%)`, // Inherit color?
+      color: parentA ? parentA.color : `hsl(${Math.random() * 360}, 70%, 60%)`,
       generation: parentA ? parentA.generation + 1 : 1,
       name: `${firstName} ${finalSurname}`,
       firstName,
@@ -207,7 +196,7 @@ export class SimulationEngine {
     };
 
     if (typeof window !== 'undefined') {
-      VectorDB.logOrganism(organism);
+      VectorDB.addHistory(organism);
     } else {
       (self as any).postMessage({ type: 'REGISTRY_LOG', data: organism });
     }
@@ -217,16 +206,13 @@ export class SimulationEngine {
 
   private spawnFlora(pos?: Vector2, type: 'HERBIVORE' | 'CARNIVORE' = 'HERBIVORE', initialGrowth?: number) {
     const finalPos = pos || this.terrain.getSafeSpawnPos();
-    const flora = Flora.create(Math.random().toString(36).substr(2, 9), finalPos, 0, 0, type); // DNA-driven, arguments 3-4 are legacy/ignored
+    const flora = Flora.create(Math.random().toString(36).substr(2, 9), finalPos, 0, 0, type, 'Fern', FERN_DNA_PROFILE.generateGenome);
 
-    // override growth state if provided (for initial world gen)
     if (initialGrowth !== undefined) {
       flora.data.growthState = initialGrowth;
     }
 
-    // Cache biome for performance
     flora.data.biome = this.terrain.getBiomeAt(finalPos.x, finalPos.y);
-
     this.state.Flora.push(flora.data);
     this.floraGridDirty = true;
   }
@@ -246,18 +232,19 @@ export class SimulationEngine {
   }
 
   forceSave() {
-    // Prune events before saving to avoid QuotaExceededError
-    // We prioritize survival of state (organisms/flora) over event logs
     if (this.state.events && this.state.events.length > 20) {
       this.state.events = this.state.events.slice(0, 20);
     }
     if (typeof window !== 'undefined') {
+      VectorDB.syncLiving(this.state.organisms);
       VectorDB.saveSimState(this.state);
     }
   }
 
   update() {
     this.state.time++;
+    const isHourly = CHRONOS_UTILS.isHourlyTick(this.state.time);
+
     if (this.state.time % 600 === 0) this.forceSave();
 
     this.orgGrid.update(this.state.organisms);
@@ -280,7 +267,7 @@ export class SimulationEngine {
     this.state.season = (totalSeasons % SIM_CONSTANTS.SEASONS_PER_CYCLE) + 1;
     this.state.cycle = Math.floor(totalSeasons / SIM_CONSTANTS.SEASONS_PER_CYCLE) + 1;
 
-    // Seasonal Bloom Event
+    // Seasonal Bloom Event (Handled at season change)
     if (prevSeason !== this.state.season) {
       const bloomCount = Math.floor(POPULATION_CONSTANTS.BLOOM_COUNT_MIN + Math.random() * (POPULATION_CONSTANTS.BLOOM_COUNT_MAX - POPULATION_CONSTANTS.BLOOM_COUNT_MIN));
       for (let i = 0; i < bloomCount; i++) {
@@ -290,35 +277,37 @@ export class SimulationEngine {
         { x: this.state.worldSize.x / 2, y: this.state.worldSize.y / 2 }, undefined, '#4ade80');
     }
 
-    // Regular Flora spawning
-    if (Math.random() < POPULATION_CONSTANTS.FLORA_SPAWN_RATE) this.spawnFlora();
+    // --- HOURLY ECOLOGICAL UPDATES ---
+    if (isHourly) {
+      // 1. Regular random Flora spawning
+      if (Math.random() < FERN_DNA_PROFILE.ECOLOGY.HOURLY_RANDOM_SPAWN_CHANCE) {
+        this.spawnFlora();
+      }
 
-    // Optimized Flora Update Loop (Hourly Growth & Spread)
-    const isHourlyTick = this.state.time % Math.floor(SIM_CONSTANTS.FRAMES_PER_HOUR) === 0;
-    const searchRadiusPx = UNIT_UTILS.mToPx(FLORA_CONSTANTS.CLUSTER_SEARCH_RADIUS_METERS);
+      const searchRadiusPx = UNIT_UTILS.mToPx(FERN_DNA_PROFILE.ECOLOGY.CLUSTER_SEARCH_RADIUS_METERS);
 
-    this.state.Flora.forEach(FloraData => {
-      // Logic Update (Growth, Lifetime) - Every frame for smooth visual decay/growth
-      FernLogic.update(FloraData, this.terrain);
+      // 2. Flora Growth & Spreading
+      this.state.Flora.forEach(floraData => {
+        // Growth Update
+        FernLogic.update(floraData, this.terrain);
 
-      // Spreading/Clumping logic - Only every hour for performance
-      if (isHourlyTick) {
-        const neighbors = this.FloraGrid.getNeighbors(FloraData.position, searchRadiusPx);
+        // Spreading/Clumping logic
+        const neighbors = this.FloraGrid.getNeighbors(floraData.position, searchRadiusPx);
         const nearbyCount = neighbors.length;
-        FloraData.nearbyFloraCount = nearbyCount;
+        floraData.nearbyFloraCount = nearbyCount;
 
-        if (nearbyCount >= FLORA_CONSTANTS.CLUSTER_MIN_NEIGHBORS &&
-          nearbyCount < FLORA_CONSTANTS.CLUSTER_MAX_NEIGHBORS &&
-          Math.random() < FLORA_CONSTANTS.CLUSTER_GROWTH_RATE * (FloraData.growthState)) {
+        if (nearbyCount >= FERN_DNA_PROFILE.ECOLOGY.CLUSTER_MIN_NEIGHBORS &&
+          nearbyCount < FERN_DNA_PROFILE.ECOLOGY.CLUSTER_MAX_NEIGHBORS &&
+          Math.random() < FERN_DNA_PROFILE.ECOLOGY.CLUSTER_GROWTH_RATE * (floraData.growthState)) {
 
           const angle = Math.random() * Math.PI * 2;
-          const distM = FLORA_CONSTANTS.CLUSTER_SPAWN_DISTANCE_MIN +
-            Math.random() * (FLORA_CONSTANTS.CLUSTER_SPAWN_DISTANCE_MAX - FLORA_CONSTANTS.CLUSTER_SPAWN_DISTANCE_MIN);
+          const distM = FERN_DNA_PROFILE.ECOLOGY.CLUSTER_SPAWN_DISTANCE_MIN +
+            Math.random() * (FERN_DNA_PROFILE.ECOLOGY.CLUSTER_SPAWN_DISTANCE_MAX - FERN_DNA_PROFILE.ECOLOGY.CLUSTER_SPAWN_DISTANCE_MIN);
 
           const distPx = UNIT_UTILS.mToPx(distM);
           const newPos = {
-            x: FloraData.position.x + Math.cos(angle) * distPx,
-            y: FloraData.position.y + Math.sin(angle) * distPx
+            x: floraData.position.x + Math.cos(angle) * distPx,
+            y: floraData.position.y + Math.sin(angle) * distPx
           };
 
           if (newPos.x > 0 && newPos.x < this.state.worldSize.x &&
@@ -326,16 +315,13 @@ export class SimulationEngine {
             this.spawnFlora(newPos);
           }
         }
-      }
-    });
+      });
 
-    // Cleanup expired flora (Every hour or so)
-    if (isHourlyTick) {
+      // 3. Cleanup expired flora
       this.state.Flora = this.state.Flora.filter(f => (f.lifetime === undefined || f.lifetime > 0));
     }
 
-    const REPRODUCTION_THRESHOLD = SPECIES_A_DNA.REPRODUCTION_THRESHOLD;
-
+    // Population Stats & Apex Tracking
     if (this.state.time % 60 === 0) {
       if (this.state.organisms.length > 0) {
         const ages = this.state.organisms.map(o => o.age);
@@ -356,41 +342,33 @@ export class SimulationEngine {
         fauna = new SpeciesALogic(orgData);
         this.logicInstances.set(orgData.id, fauna);
       }
+
       // 1. HANDLE MATING COMPLETION
       if (orgData.matingTimer === 0 && orgData.matingTargetId) {
         const other = orgMap.get(orgData.matingTargetId);
         if (other && parseInt(orgData.id) < parseInt(other.id)) {
-          // Execute the "Black Box" logic you wrote
           const birth = ReproductionEngine.processBirth(orgData, other);
-
-          // Deduct the dynamic cost (Base + Trait Surcharge)
           orgData.energy -= birth.costToEachParent;
           other.energy -= birth.costToEachParent;
-
-          // Spawn with the "Wasted" energy value and mutated genome
           this.spawnOrganism(orgData, other, { ...orgData.position }, birth.initialEnergy, birth.childGenome);
-
           orgData.matingCount++;
           other.matingCount++;
         }
         orgData.matingTargetId = undefined;
       }
 
-      // 1. Gather Context (Neighbors)
+      // Sensory Integration
       const sightRangePx = UNIT_UTILS.mToPx(orgData.expressedStats.sight_range);
       const audibleRangePx = UNIT_UTILS.mToPx(orgData.expressedStats.audible_range || 3.0);
       const maxSensoryRangePx = Math.max(sightRangePx, audibleRangePx);
 
-      // Flora Context (Vision only for now)
       const fNeighborIds = this.FloraGrid.getNeighbors(orgData.position, sightRangePx);
       const floraNeighbors = fNeighborIds.map(id => FloraMap.get(id)).filter(f => f !== undefined) as FloraData[];
 
-      // Fauna Context (Vision + Hearing)
-      // Use max range to ensure SensorSystem gets all potential candidates
       const orgNeighborIds = this.orgGrid.getNeighbors(orgData.position, maxSensoryRangePx);
       const orgNeighbors = orgNeighborIds.map(id => orgMap.get(id)).filter(o => o !== undefined && o.id !== orgData.id) as OrganismData[];
 
-      // 2. DELEGATE BEHAVIOR (Brain Logic)
+      // Delegate Thinking
       fauna.think(
         this.state.time,
         this.state.worldSize,
@@ -400,7 +378,6 @@ export class SimulationEngine {
         {
           onEat: (f) => {
             orgData.energy += f.energyValue * f.growthState;
-            // The Flora must be removed to prevent Infinite Eating! -->
             const idx = this.state.Flora.findIndex(flora => flora.id === f.id);
             if (idx !== -1) {
               this.state.Flora.splice(idx, 1);
@@ -408,42 +385,32 @@ export class SimulationEngine {
             }
           },
           onMate: (other) => {
-            // Handshake logic: Initiate the 120-frame bonding
             if (orgData.matingTimer === 0 && other.matingTimer === 0) {
-              orgData.matingTimer = 120;
+              const matingFrames = POPULATION_CONSTANTS.MATING_BOND_DURATION_HOURS * SIM_CONSTANTS.FRAMES_PER_HOUR;
+              orgData.matingTimer = matingFrames;
               orgData.matingTargetId = other.id;
-              other.matingTimer = 120;
+              other.matingTimer = matingFrames;
               other.matingTargetId = orgData.id;
               this.logEvent('MILESTONE', `${orgData.name} & ${other.name} are bonding`, orgData.position);
             }
-          } // End of onMate
+          }
         }
-      ); // End of think method
+      );
 
-      // 3. FINAL PHYSICAL UPDATE
       fauna.update(this.state.time, this.state.worldSize, this.terrain, popStats);
-
-      // 4. POST-LOGIC ENGINE ACTIONS (Parthenogenesis check)
-      // Check if they have enough to afford asexual birth (cost is doubled)
-      const safeAsexualThreshold = POPULATION_CONSTANTS.BIRTH_COST * 1.5;
-      if (orgData.energy > safeAsexualThreshold) {
-        const birth = ReproductionEngine.processBirth(orgData, undefined);
-        const totalAsexualCost = birth.costToEachParent * 2;
-
-        // CRITICAL FIX: Ensure the single parent actually survives the cloning
-        if (orgData.energy > totalAsexualCost + 500) {
-          orgData.energy -= totalAsexualCost;
-          this.spawnOrganism(orgData, undefined, { ...orgData.position }, birth.initialEnergy, birth.childGenome);
-        }
-      }
     });
-    // 5. CLEANUP & DEATH
+
+    // Death & Cleanup
     this.state.organisms = this.state.organisms.filter(org => {
       const dead = org.age > org.expressedStats.lifespan || org.energy <= 0;
       if (dead) {
         this.logicInstances.delete(org.id);
         this.spawnFlora(org.position, 'CARNIVORE');
-        // ... logging logic ...
+        if (typeof window !== 'undefined') {
+          VectorDB.markDeceased(org.id, org);
+        } else {
+          (self as any).postMessage({ type: 'REGISTRY_DEATH', id: org.id, data: org });
+        }
       }
       return !dead;
     });

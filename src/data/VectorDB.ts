@@ -1,21 +1,12 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  VectorDB — IndexedDB-Only Persistence Layer                           ║
+ * ║  VectorDB — Atomic IndexedDB Persistence Layer                           ║
  * ║                                                                         ║
- * ║  ARCHITECTURE: Write-Behind Cache                                       ║
+ * ║  ARCHITECTURE: Atomic Write-Behind Cache                                ║
  * ║  ─────────────────────────────────────────────────────────────────────── ║
- * ║  • All READS are instant, served from in-memory Maps (O(1) latency)    ║
- * ║  • All WRITES go to IndexedDB asynchronously (non-blocking)            ║
- * ║  • On startup, `await VectorDB.init()` hydrates all caches from IDB   ║
- * ║                                                                         ║
- * ║  ⚠️  DO NOT ADD localStorage CALLS TO THIS FILE.                       ║
- * ║  localStorage has a ~5-10MB hard limit and causes data loss when the   ║
- * ║  simulation state exceeds it (organisms get mass-deleted by the        ║
- * ║  browser's QuotaExceededError handler). IndexedDB has ~250MB+ capacity ║
- * ║  and is the industry standard for structured client-side persistence.  ║
- * ║                                                                         ║
- * ║  If you need synchronous reads, read from the in-memory caches.       ║
- * ║  Never add synchronous localStorage.getItem/setItem calls.            ║
+ * ║  • Individual organism records (no giant blobs)                          ║
+ * ║  • Dirty-flag change tracking for non-blocking I/O                      ║
+ * ║  • Scalability for 2500+ entities via multi-store transactions           ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
 
@@ -31,11 +22,6 @@ export interface VectorAsset {
   timestamp: number;
 }
 
-/**
- * Tokenization map — reduces key names in serialized objects to minimize IndexedDB payload.
- * This is NOT for localStorage size limits (we don't use localStorage) but for reducing
- * IndexedDB I/O overhead and structured clone time on large state objects.
- */
 const TOKEN_MAP: Record<string, string> = {
   "organisms": "o", "Flora": "f", "position": "p", "velocity": "v",
   "expressedStats": "es", "genome": "g", "traits": "tr", "memories": "m",
@@ -51,51 +37,34 @@ const TOKEN_MAP: Record<string, string> = {
 };
 const REVERSE_TOKEN_MAP = Object.fromEntries(Object.entries(TOKEN_MAP).map(([k, v]) => [v, k]));
 
-// ── IndexedDB Key Constants ────────────────────────────────────────────────
-// These are the keys used inside the single IndexedDB object store.
-// Each key maps to a distinct data category.
 const IDB_KEY = {
-  STATE: 'ales_sim_state',       // Full simulation state (organisms, flora, config)
-  HISTORY: 'ales_history',       // Organism lineage/history registry
-  EVENTS: 'ales_events',         // Simulation event log
-  SETTINGS: 'ales_settings',     // User UI preferences (debug toggles, etc.)
+  STATE: 'ales_sim_state',       // Global simulation parameters (Flora, config, etc.)
+  SETTINGS: 'ales_settings',     // User UI preferences
 } as const;
 
 class VectorDatabase {
-  // ── In-Memory Caches (Write-Behind) ──────────────────────────────────────
-  // All reads come from these caches. Writes update the cache first, then
-  // persist to IndexedDB asynchronously. This gives O(1) read performance
-  // with zero latency, while still guaranteeing persistence.
   private organisms: Map<string, OrganismData & { isAlive: boolean }> = new Map();
   private documents: VectorAsset[] = [];
   private settingsCache: Map<string, any> = new Map();
   private eventsCache: any[] = [];
+  private dirtyOrganisms: Set<string> = new Set();
 
-  // ── Indices ──────────────────────────────────────────────────────────────
   private surnameIndex: Map<string, Set<string>> = new Map();
   private familyCountIndex: Map<string, number> = new Map();
 
-  // ── Configuration ────────────────────────────────────────────────────────
-  private MAX_HISTORY_SIZE = 1000;
-  private SAVE_DEBOUNCE_MS = 2000;
-  private saveTimeout: number | null = null;
+  private SAVE_DEBOUNCE_MS = 1000;
+  private saveTimeout: any = null;
 
-  // ── IndexedDB Handle ─────────────────────────────────────────────────────
-  // Single object store "state" in database "ales_persistence".
-  // Using a single store with string keys is the simplest and most performant
-  // pattern for key-value persistence in IndexedDB.
-  private DB_NAME = 'ales_persistence';
-  private DB_STORE = 'state';
+  private DB_NAME = 'ales_persistence_v2'; // Bumped version for structural shift
+  private DB_STORES = {
+    ORGANISMS: 'organisms',
+    EVENTS: 'events',
+    SYSTEM: 'system' // For state and settings
+  };
   private DB_VERSION = 1;
   private dbPromise: Promise<IDBDatabase> | null = null;
 
-  /**
-   * Whether the async init() has completed and all caches are hydrated.
-   * Before this is true, getSetting() returns defaults and saves are queued.
-   */
   public isReady = false;
-
-  // ── Diagnostic Metrics (exposed for GUI status panel) ────────────────────
   public lastSaveMs = 0;
   public lastLoadMs = 0;
   public lastSaveOrgCount = 0;
@@ -103,335 +72,360 @@ class VectorDatabase {
 
   constructor() {
     this.initDocs();
-    // Pre-open IndexedDB connection (non-blocking)
-    this.openDB();
+    // Don't eagerly open — let init() handle it
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // PUBLIC API
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Async initialization — MUST be awaited before the app renders.
-   * Hydrates all in-memory caches from IndexedDB in a single batch.
-   * After this resolves, all sync reads (getSetting, getHistory, etc.) work.
-   *
-   * ⚠️  Call this exactly once at app startup, before creating SimulationEngine.
-   */
   async init(): Promise<void> {
+    if (this.isReady) return;
     const t0 = performance.now();
     try {
-      // Parallel hydration of all caches from IndexedDB
-      const [settings, history, events] = await Promise.all([
-        this.idbGet(IDB_KEY.SETTINGS),
-        this.idbGet(IDB_KEY.HISTORY),
-        this.idbGet(IDB_KEY.EVENTS),
+      console.log("[VDB] Opening Database...");
+      const db = await this.openDB();
+      console.log("[VDB] Database opened. Fetching stores...");
+
+      // Parallel hydration of caches
+      const [systemStore, organismsStore, eventsStore] = await Promise.all([
+        this.getAllFromStore(this.DB_STORES.SYSTEM),
+        this.getAllFromStore(this.DB_STORES.ORGANISMS),
+        this.getAllFromStore(this.DB_STORES.EVENTS)
       ]);
+      console.log(`[VDB] Stores fetched: System(${systemStore.length}), Organisms(${organismsStore.length}), Events(${eventsStore.length})`);
 
-      // Hydrate settings cache
-      if (settings && typeof settings === 'object') {
-        for (const [k, v] of Object.entries(settings)) {
-          this.settingsCache.set(k, v);
+      // Hydrate System (Settings & State)
+      systemStore.forEach(({ key, value }) => {
+        if (key === IDB_KEY.SETTINGS) {
+          Object.entries(value).forEach(([k, v]) => this.settingsCache.set(k, v));
         }
-      }
+      });
 
-      // Hydrate organism history
-      if (Array.isArray(history)) {
-        const detokenized = this.detokenize(history);
-        this.organisms = new Map(detokenized);
-        this.refreshIndices();
-      }
+      // Hydrate Organisms (Atomic Load)
+      console.log("[VDB] Detokenizing organisms...");
+      organismsStore.forEach(({ key, value }) => {
+        try {
+          const org = this.detokenize(value);
+          this.organisms.set(org.id, org);
+        } catch (e) {
+          console.error(`[VDB] Hydration Error: Failed to detokenize organism ${key}`, e);
+        }
+      });
+      console.log("[VDB] Refreshing indices...");
+      this.refreshIndices();
 
-      // Hydrate events cache
-      if (Array.isArray(events)) {
-        this.eventsCache = this.detokenize(events);
-      }
-
-      // Migrate any existing localStorage data to IndexedDB (one-time)
-      await this.migrateFromLocalStorage();
+      // Hydrate Events
+      console.log("[VDB] Detokenizing events...");
+      this.eventsCache = this.detokenize(eventsStore.map(e => e.value));
+      console.log("[VDB] Hydration complete.");
 
     } catch (e) {
-      console.warn('[VDB] init() failed, starting with empty caches', e);
+      console.warn('[VDB] init() failed, check IndexedDB state', e);
     }
 
     this.isReady = true;
     this.lastLoadMs = performance.now() - t0;
-    console.log(`[VDB] Init complete in ${this.lastLoadMs.toFixed(1)}ms — ` +
-      `${this.organisms.size} history records, ${this.settingsCache.size} settings`);
+    console.log(`[VDB] Init complete in ${this.lastLoadMs.toFixed(1)}ms (${this.organisms.size} records)`);
   }
 
-  // ── Settings (Write-Behind Cache) ─────────────────────────────────────────
-  // Settings are stored as a flat Map in memory. Reads are instant (sync).
-  // Writes update the Map then persist the entire settings object to IDB.
+  // ── Settings ──────────────────────────────────────────────────────────────
 
-  /**
-   * Synchronous setting read — returns from in-memory cache.
-   * Safe to call from React useState initializers.
-   */
   getSetting(key: string, defaultValue: any): any {
     const val = this.settingsCache.get(key);
     return val !== undefined ? val : defaultValue;
   }
 
-  /**
-   * Setting write — updates in-memory cache instantly, then persists async.
-   */
   setSetting(key: string, value: any): void {
     this.settingsCache.set(key, value);
-    // Write-behind: persist full settings map to IDB
     const obj = Object.fromEntries(this.settingsCache);
-    this.idbPut(IDB_KEY.SETTINGS, obj).catch(e =>
-      console.warn('[VDB] Failed to persist settings', e)
-    );
+    this.idbPut(this.DB_STORES.SYSTEM, IDB_KEY.SETTINGS, obj).catch(() => { });
   }
 
   // ── Simulation State ──────────────────────────────────────────────────────
 
   /**
-   * Save full simulation state to IndexedDB.
-   * Strips non-essential data (expressedStats, excess memories) to minimize
-   * structured-clone overhead, but NEVER deletes organisms or flora.
+   * Saves the simulation state to IndexedDB.
+   * Optimizations:
+   * 1. Uses requestIdleCallback (if available) to avoid blocking the main thread.
+   * 2. Tokenizes while cloning to avoid redundant JSON.stringify/parse.
+   * 3. Prunes non-essential data (expressedStats) during tokenization.
    */
   saveSimState(state: any): void {
-    const t0 = performance.now();
-    const persistentState = JSON.parse(JSON.stringify(state));
+    const runSave = () => {
+      const t0 = performance.now();
 
-    // Strip derived/transient data to reduce payload size
-    if (persistentState.organisms) {
-      persistentState.organisms.forEach((o: any) => {
-        // expressedStats are re-derived from genome on load — no need to persist
-        delete o.expressedStats;
-        // Amount of memories to persist. Keep only the most recent memories
-        if (o.memories && o.memories.length > COGNITIVE_CONSTANTS.PERSISTENT_MEMORY_LIMIT) o.memories = o.memories.slice(-COGNITIVE_CONSTANTS.PERSISTENT_MEMORY_LIMIT);
-      });
+      // Deep clone & tokenize in one pass (Pruning included)
+      const tokenized = this.tokenizeAndPrune(state);
+
+      const orgCount = state.organisms?.length || 0;
+
+      this.idbPut(this.DB_STORES.SYSTEM, IDB_KEY.STATE, tokenized).then(() => {
+        this.lastSaveMs = performance.now() - t0;
+        this.lastSaveOrgCount = orgCount;
+        this.saveCount++;
+
+        // Background sync living history (Atomic)
+        if (state.organisms) {
+          this.syncLiving(state.organisms);
+        }
+      }).catch(() => { });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => runSave(), { timeout: 2000 });
+    } else {
+      setTimeout(runSave, 0);
     }
-
-    // Separate events to their own key for granular access
-    if (persistentState.events) {
-      this.eventsCache = persistentState.events.slice(0, 20);
-      this.idbPut(IDB_KEY.EVENTS, this.tokenize(this.eventsCache)).catch(() => { });
-      delete persistentState.events;
-    }
-
-    const tokenized = this.tokenize(persistentState);
-    const orgCount = persistentState.organisms?.length || 0;
-
-    this.idbPut(IDB_KEY.STATE, tokenized).then(() => {
-      this.lastSaveMs = performance.now() - t0;
-      this.lastSaveOrgCount = orgCount;
-      this.saveCount++;
-      console.log(`[VDB] State saved (${orgCount} orgs, ${this.lastSaveMs.toFixed(1)}ms)`);
-    }).catch(e => {
-      console.error('[VDB] CRITICAL: State save failed!', e);
-    });
   }
 
   /**
-   * Load simulation state from IndexedDB.
-   * Returns null if no saved state exists.
+   * Combined Tokenizer, Cloner, and Pruner.
+   * Removes expressedStats and truncates memories to keep DB size manageable.
    */
+  private tokenizeAndPrune(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+
+    // Handle Arrays
+    if (Array.isArray(obj)) {
+      return obj.map(v => this.tokenizeAndPrune(v));
+    }
+
+    // Handle Objects
+    const tokenized: any = {};
+    for (const key in obj) {
+      // --- PRUNING RULES ---
+      if (key === 'expressedStats') continue;
+      if (key === 'events') continue; // Events handled separately
+
+      const token = TOKEN_MAP[key] || key;
+      let value = obj[key];
+
+      // Memory Truncation for persistence
+      if (key === 'memories' && Array.isArray(value)) {
+        if (value.length > COGNITIVE_CONSTANTS.PERSISTENT_MEMORY_LIMIT) {
+          value = value.slice(-COGNITIVE_CONSTANTS.PERSISTENT_MEMORY_LIMIT);
+        }
+      }
+
+      tokenized[token] = this.tokenizeAndPrune(value);
+    }
+    return tokenized;
+  }
+
   async loadSimState(): Promise<any | null> {
-    const t0 = performance.now();
     try {
-      const saved = await this.idbGet(IDB_KEY.STATE);
+      const saved = await this.idbGet(this.DB_STORES.SYSTEM, IDB_KEY.STATE);
       if (saved) {
         const state = this.detokenize(saved);
-        state.events = this.eventsCache; // Attach cached events
-        this.lastLoadMs = performance.now() - t0;
-        console.log(`[VDB] State loaded (${state.organisms?.length || 0} orgs, ${this.lastLoadMs.toFixed(1)}ms)`);
+        state.events = this.eventsCache;
         return state;
       }
-    } catch (e) {
-      console.warn('[VDB] State load failed', e);
-    }
+    } catch { return null; }
     return null;
   }
 
-  // ── Organism History (Lineage Registry) ───────────────────────────────────
+  // ── Organism History ──────────────────────────────────────────────────────
 
-  logOrganism(org: OrganismData): void {
-    this.organisms.set(org.id, { ...org, isAlive: true });
-    this.updateIndicesFor(org);
-    this.debounceSaveHistory();
+  syncLiving(organisms: (OrganismData & { isAlive?: boolean })[]): void {
+    organisms.forEach(org => {
+      const existing = this.organisms.get(org.id);
+      if (existing) {
+        this.organisms.set(org.id, {
+          ...existing,
+          age: org.age,
+          energy: org.energy,
+          matingCount: org.matingCount,
+          isAlive: true
+        });
+      } else {
+        this.organisms.set(org.id, { ...org, isAlive: true, memories: [] });
+        this.updateIndicesFor(org);
+      }
+      this.dirtyOrganisms.add(org.id);
+    });
+    this.debounceSave();
+  }
 
-    if (this.organisms.size > this.MAX_HISTORY_SIZE * 1.2) {
-      this.pruneHistory(this.MAX_HISTORY_SIZE);
+  public pushToHistory(entityId: string, memory: any): void {
+    const org = this.organisms.get(entityId);
+    if (!org) return;
+
+    if (!org.memories) org.memories = [];
+
+    // --- CONSOLIDATION LOGIC ---
+    // If the last memory was similar (e.g., eating), consolidate it
+    const lastMem = org.memories[org.memories.length - 1];
+    if (lastMem && memory.content.includes('Energy') && lastMem.content.includes('Energy')) {
+      const match = lastMem.content.match(/Harvested (\d+)x Energy/);
+      const currentAmount = match ? parseInt(match[1]) : 1;
+      lastMem.content = `Harvested ${currentAmount + 1}x Energy`;
+      lastMem.timestamp = Date.now();
+    } else {
+      if (!org.memories.some(m => m.id === memory.id)) {
+        org.memories.push(memory);
+      }
+    }
+
+    const limit = 200; // High limit for atomic records
+    if (org.memories.length > limit) org.memories.shift();
+
+    this.dirtyOrganisms.add(entityId);
+    this.debounceSave();
+  }
+
+  markDeceased(id: string, finalData?: OrganismData): void {
+    const org = this.organisms.get(id);
+    if (org) {
+      if (finalData) {
+        this.organisms.set(id, { ...finalData, isAlive: false });
+      } else {
+        org.isAlive = false;
+      }
+      this.dirtyOrganisms.add(id);
+      this.debounceSave();
     }
   }
 
   addHistory(org: OrganismData): void {
-    this.logOrganism(org);
-  }
-
-  markDeceased(id: string): void {
-    const org = this.organisms.get(id);
-    if (org) {
-      org.isAlive = false;
-      this.debounceSaveHistory();
-    }
+    this.organisms.set(org.id, { ...org, isAlive: true });
+    this.updateIndicesFor(org);
+    this.dirtyOrganisms.add(org.id);
+    this.debounceSave();
   }
 
   getHistory(): OrganismData[] {
     return Array.from(this.organisms.values()).sort((a, b) => b.generation - a.generation);
   }
 
-  getLineage(id: string): OrganismData[] {
-    const lineage: OrganismData[] = [];
-    let currentId: string | undefined = id;
-    while (currentId && this.organisms.has(currentId)) {
-      const ancestor = this.organisms.get(currentId)!;
-      lineage.push(ancestor);
-      currentId = ancestor.parentId;
-      if (lineage.length > 20) break;
-    }
-    return lineage;
-  }
-
   getFamilyCount(firstName: string, surname: string): number {
     return this.familyCountIndex.get(`${firstName}_${surname}`) || 0;
   }
 
-  // ── Events ────────────────────────────────────────────────────────────────
+  getEvents(): any[] { return this.eventsCache; }
+  getAssets(): VectorAsset[] { return this.documents; }
 
-  getEvents(): any[] {
-    return this.eventsCache;
+  // ── Persistence Internals ─────────────────────────────────────────────────
+
+  private debounceSave(): void {
+    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+    this.saveTimeout = setTimeout(() => this.flushDirty(), this.SAVE_DEBOUNCE_MS);
   }
 
-  // ── System Assets ─────────────────────────────────────────────────────────
+  private async flushDirty(): Promise<void> {
+    if (this.dirtyOrganisms.size === 0) return;
 
-  getAssets(): VectorAsset[] {
-    return this.documents;
-  }
+    const db = await this.openDB();
+    const tx = db.transaction(this.DB_STORES.ORGANISMS, 'readwrite');
+    const store = tx.objectStore(this.DB_STORES.ORGANISMS);
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
+    const snapshot = Array.from(this.dirtyOrganisms);
+    this.dirtyOrganisms.clear();
 
-  /**
-   * Nuclear reset — clears ALL persisted data from IndexedDB and memory.
-   * Also clears any legacy localStorage keys for completeness.
-   */
-  hardReset(): void {
-    // Clear IndexedDB (primary store)
-    this.openDB().then(db => {
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      tx.objectStore(this.DB_STORE).clear();
-      console.log('[VDB] IndexedDB cleared');
-    }).catch(() => { });
-
-    // Clear legacy localStorage keys (one-time cleanup, safe to call)
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem('ales_sim_state');
-        localStorage.removeItem('ales_events_persistence');
-        localStorage.removeItem('ales_organisms_persistence');
-        localStorage.removeItem('ales_settings');
+    snapshot.forEach(id => {
+      const org = this.organisms.get(id);
+      if (org) {
+        const tokenized = this.tokenize({ ...org, lastSaved: Date.now() });
+        store.put(tokenized, id);
       }
-    } catch { /* ignore in workers */ }
+    });
 
-    // Clear in-memory caches
-    this.organisms.clear();
-    this.surnameIndex.clear();
-    this.familyCountIndex.clear();
-    this.settingsCache.clear();
-    this.eventsCache = [];
-    this.lastSaveMs = 0;
-    this.lastSaveOrgCount = 0;
-    this.saveCount = 0;
-  }
-
-  // ── Diagnostics (for GUI status panel) ────────────────────────────────────
-
-  /**
-   * Returns metrics for the VectorDB status GUI element.
-   */
-  getMetrics(): {
-    historySize: number;
-    settingsCount: number;
-    lastSaveMs: number;
-    lastLoadMs: number;
-    lastSaveOrgCount: number;
-    saveCount: number;
-    isReady: boolean;
-  } {
-    return {
-      historySize: this.organisms.size,
-      settingsCount: this.settingsCache.size,
-      lastSaveMs: this.lastSaveMs,
-      lastLoadMs: this.lastLoadMs,
-      lastSaveOrgCount: this.lastSaveOrgCount,
-      saveCount: this.saveCount,
-      isReady: this.isReady,
+    tx.oncomplete = () => {
+      console.log(`[VDB] Atomic flush complete: ${snapshot.length} records persisted.`);
     };
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // PRIVATE INTERNALS
-  // ════════════════════════════════════════════════════════════════════════════
-
-  // ── IndexedDB Operations ──────────────────────────────────────────────────
-
-  private openDB(): Promise<IDBDatabase> {
-    if (this.dbPromise) return this.dbPromise;
-    this.dbPromise = new Promise((resolve, reject) => {
-      if (typeof indexedDB === 'undefined') {
-        reject(new Error('IndexedDB not available'));
-        return;
-      }
-      const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(this.DB_STORE)) {
-          db.createObjectStore(this.DB_STORE);
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    return this.dbPromise;
-  }
-
-  private async idbPut(key: string, value: any): Promise<void> {
+  private async saveEventsBatch(events: any[]): Promise<void> {
     const db = await this.openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.DB_STORE, 'readwrite');
-      const store = tx.objectStore(this.DB_STORE);
-      store.put(value, key);
+      const tx = db.transaction(this.DB_STORES.EVENTS, 'readwrite');
+      const store = tx.objectStore(this.DB_STORES.EVENTS);
+      store.clear();
+      events.forEach((ev, idx) => store.put(this.tokenize(ev), idx));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   }
 
-  private async idbGet(key: string): Promise<any | null> {
-    try {
-      const db = await this.openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(this.DB_STORE, 'readonly');
-        const store = tx.objectStore(this.DB_STORE);
-        const req = store.get(key);
-        req.onsuccess = () => resolve(req.result ?? null);
-        req.onerror = () => reject(req.error);
-      });
-    } catch (e) {
-      console.warn('[VDB] idbGet failed for key:', key, e);
-      return null;
-    }
+  // ── IndexedDB Plumbing ────────────────────────────────────────────────────
+
+  private openDB(): Promise<IDBDatabase> {
+    if (this.dbPromise) return this.dbPromise;
+    this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject('No IndexedDB');
+
+      // Timeout: if IDB is blocked/stuck for >3s, reject so app can launch
+      const timeout = setTimeout(() => {
+        console.error('[VDB] openDB timeout — IndexedDB may be blocked by another tab.');
+        reject(new Error('IndexedDB open timeout'));
+      }, 3000);
+
+      const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        Object.values(this.DB_STORES).forEach(s => {
+          if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+        });
+      };
+      req.onsuccess = () => { clearTimeout(timeout); resolve(req.result); };
+      req.onerror = () => { clearTimeout(timeout); reject(req.error); };
+      req.onblocked = () => {
+        console.warn('[VDB] IndexedDB blocked — close other tabs using this app.');
+        clearTimeout(timeout);
+        reject(new Error('IndexedDB blocked'));
+      };
+    }).catch(e => {
+      // Reset promise so future calls can retry
+      this.dbPromise = null;
+      throw e;
+    });
+    return this.dbPromise;
   }
 
-  private async idbDelete(key: string): Promise<void> {
-    try {
-      const db = await this.openDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(this.DB_STORE, 'readwrite');
-        tx.objectStore(this.DB_STORE).delete(key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch { /* best-effort */ }
+  private async idbPut(storeName: string, key: string, value: any): Promise<void> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   }
 
-  // ── Tokenization ──────────────────────────────────────────────────────────
-  // Reduces key length in serialized objects to minimize IndexedDB I/O.
-  // IndexedDB uses structured clone which handles objects natively, but
-  // shorter keys still reduce memory footprint and clone time.
+  private async idbGet(storeName: string, key: string): Promise<any | null> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const req = tx.objectStore(storeName).get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  private async getAllFromStore(storeName: string): Promise<{ key: string, value: any }[]> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const req = store.getAll();
+      const keyReq = store.getAllKeys();
+      tx.oncomplete = () => {
+        const values = req.result;
+        const keys = keyReq.result as string[];
+        resolve(values.map((v, i) => ({ key: keys[i], value: v })));
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  hardReset(): void {
+    this.openDB().then(db => {
+      const tx = db.transaction(Object.values(this.DB_STORES), 'readwrite');
+      Object.values(this.DB_STORES).forEach(s => tx.objectStore(s).clear());
+    });
+    this.organisms.clear();
+    this.settingsCache.clear();
+    this.eventsCache = [];
+    this.refreshIndices();
+  }
+
+  // ── Utils ─────────────────────────────────────────────────────────────────
 
   private tokenize(obj: any): any {
     if (Array.isArray(obj)) return obj.map(v => this.tokenize(v));
@@ -459,42 +453,6 @@ class VectorDatabase {
     return obj;
   }
 
-  // ── History Persistence ───────────────────────────────────────────────────
-
-  private debounceSaveHistory(): void {
-    if (this.saveTimeout) clearTimeout(this.saveTimeout);
-    this.saveTimeout = (typeof window !== 'undefined' ? window : self as any).setTimeout(() => {
-      this.saveHistory();
-      this.saveTimeout = null;
-    }, this.SAVE_DEBOUNCE_MS);
-  }
-
-  private saveHistory(): void {
-    if (this.organisms.size > this.MAX_HISTORY_SIZE) {
-      this.pruneHistory(this.MAX_HISTORY_SIZE);
-    }
-
-    // Prune memories to reduce payload
-    this.organisms.forEach(org => {
-      if (org.memories && org.memories.length > COGNITIVE_CONSTANTS.PERSISTENT_MEMORY_LIMIT) org.memories = org.memories.slice(-COGNITIVE_CONSTANTS.HISTORICAL_MEMORY_LIMIT);
-    });
-
-    const data = this.tokenize(Array.from(this.organisms.entries()));
-    this.idbPut(IDB_KEY.HISTORY, data).catch(e =>
-      console.warn('[VDB] History save failed', e)
-    );
-  }
-
-  private pruneHistory(limit: number): void {
-    if (this.organisms.size <= limit) return;
-    const sorted = Array.from(this.organisms.entries())
-      .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
-    this.organisms = new Map(sorted.slice(0, limit));
-    this.refreshIndices();
-  }
-
-  // ── Index Management ──────────────────────────────────────────────────────
-
   private updateIndicesFor(org: OrganismData): void {
     const existing = this.surnameIndex.get(org.surname) || new Set();
     existing.add(org.id);
@@ -509,97 +467,12 @@ class VectorDatabase {
     this.organisms.forEach(org => this.updateIndicesFor(org));
   }
 
-  // ── System Documents ──────────────────────────────────────────────────────
-
   private initDocs(): void {
     this.documents.push({
       id: 'doc_genetics', type: 'SYSTEM_DOC', timestamp: Date.now(),
       data: { title: 'Genetic Expression: Standardized Units', content: 'Trait values are expressed in metric units where applicable.' }
     });
-    this.documents.push({
-      id: 'doc_chronos', type: 'SYSTEM_DOC', timestamp: Date.now(),
-      data: { title: 'Chronos Layer: Time Standardization', content: 'Simulation time is mapped to a 30-second Day-Night cycle.' }
-    });
-  }
-
-  // ── Legacy Migration ──────────────────────────────────────────────────────
-  /**
-   * One-time migration from localStorage to IndexedDB.
-   * Reads any existing localStorage data, writes it to IndexedDB, then
-   * removes the localStorage keys. This ensures users upgrading from the
-   * old localStorage-based system don't lose their data.
-   *
-   * ⚠️  This method should remain here indefinitely for backward compatibility.
-   *     It is safe to call repeatedly — it only acts if localStorage data exists.
-   */
-  private async migrateFromLocalStorage(): Promise<void> {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-
-    let migrated = false;
-
-    try {
-      // Migrate sim state
-      const stateStr = localStorage.getItem('ales_sim_state');
-      if (stateStr) {
-        const existing = await this.idbGet(IDB_KEY.STATE);
-        if (!existing) {
-          // Only migrate if IndexedDB doesn't already have data
-          const state = JSON.parse(stateStr);
-          await this.idbPut(IDB_KEY.STATE, state); // Already tokenized in localStorage
-          migrated = true;
-        }
-        localStorage.removeItem('ales_sim_state');
-      }
-
-      // Migrate events
-      const eventsStr = localStorage.getItem('ales_events_persistence');
-      if (eventsStr) {
-        const events = JSON.parse(eventsStr);
-        this.eventsCache = this.detokenize(events);
-        await this.idbPut(IDB_KEY.EVENTS, events);
-        localStorage.removeItem('ales_events_persistence');
-        migrated = true;
-      }
-
-      // Migrate history
-      const historyStr = localStorage.getItem('ales_organisms_persistence');
-      if (historyStr) {
-        const existing = await this.idbGet(IDB_KEY.HISTORY);
-        if (!existing) {
-          const history = JSON.parse(historyStr);
-          const detokenized = this.detokenize(history);
-          this.organisms = new Map(detokenized);
-          this.refreshIndices();
-          await this.idbPut(IDB_KEY.HISTORY, history);
-          migrated = true;
-        }
-        localStorage.removeItem('ales_organisms_persistence');
-      }
-
-      // Migrate settings
-      const settingsStr = localStorage.getItem('ales_settings');
-      if (settingsStr) {
-        const settings = JSON.parse(settingsStr);
-        for (const [k, v] of Object.entries(settings)) {
-          this.settingsCache.set(k, v);
-        }
-        await this.idbPut(IDB_KEY.SETTINGS, settings);
-        localStorage.removeItem('ales_settings');
-        migrated = true;
-      }
-
-      if (migrated) {
-        console.log('[VDB] ✅ Migrated legacy localStorage data to IndexedDB');
-      }
-    } catch (e) {
-      console.warn('[VDB] localStorage migration encountered errors (non-fatal)', e);
-    }
   }
 }
 
-/**
- * Singleton instance.
- * ⚠️  You MUST call `await VectorDB.init()` before using any read methods.
- *     The constructor only opens the DB connection; init() hydrates caches.
- */
 export const VectorDB = new VectorDatabase();

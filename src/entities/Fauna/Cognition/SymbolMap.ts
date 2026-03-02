@@ -23,12 +23,13 @@ export const SYMBOL_MAP = {
     // Basic Memory Types mapping to root categories
     Types: {
         Flora: '🌿',
-        FoodLocation: '🍏',
-        FaunaLocation: '👤',
+        Food: '🍏',
+        Fauna: '👤',
         MATE: '❤️',
         THREAT: '⚠️',
         SectorScan: '📡',
-        Memory: '🧠'
+        Memory: '🧠',
+        Location: '🗺️',
     },
 
     // Content Keywords for specific overrides logic
@@ -49,11 +50,17 @@ export const SYMBOL_MAP = {
  */
 export function getSyntax(type: string, content: string, isFamiliar: boolean = false, isGroup: boolean = false): string {
     const { Perception, Vision, Entity, Recognition, Concept, Familiarity, Group } = SYMBOL_MAP.Tokens;
+    const { Flora, Food, MATE, THREAT, Location } = SYMBOL_MAP.Types;
 
     // Grouping logic (Multi-entity)
     if (isGroup) {
-        return `[${Perception}${Vision}${Familiarity}]`;
+        return `[${Perception}${Vision}${Familiarity}${Group}]`;
     }
+
+    // Special Types
+    if (type === 'MATE') return `[${Perception}${Vision}${Entity}] ${MATE}`;
+    if (type === 'THREAT') return `[${Perception}${Vision}${Entity}] ${THREAT}`;
+    if (type === 'Food' || type === 'Flora') return `[${Perception}${Vision}${Flora}]${Recognition}{${Concept}${Food}${Location}}`;
 
     // Meet and Greet / Recognition logic
     if (isFamiliar) {

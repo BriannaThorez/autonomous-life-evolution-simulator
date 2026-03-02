@@ -17,8 +17,9 @@ export class WebGLRenderer {
     private terrainInitialized = false;
 
     // --- Performance: reusable arrays & caches ---
-    private orgDataBuffer = new Float32Array(1024 * 4 * 5);
-    private floraDataBuffer = new Float32Array(1024 * 4 * 2);
+    private static readonly MAX_INSTANCES = 2048;
+    private orgDataBuffer = new Float32Array(WebGLRenderer.MAX_INSTANCES * 4 * 5);
+    private floraDataBuffer = new Float32Array(WebGLRenderer.MAX_INSTANCES * 4 * 2);
     private colorCache = new Map<string, [number, number, number]>();
     private prevVelocities = new Map<string, { x: number; y: number }>();
 
@@ -110,6 +111,8 @@ export class WebGLRenderer {
     `;
 
     private static FAUNA_VERT_SHADER = `#version 300 es
+        // === GPGPU FAUNA VERTEX SHADER ===
+        // Reactive trailing jelly stretch + side-to-side jiggle
         in vec2 a_unitPosition;
         in int a_instanceID;
 
@@ -122,13 +125,18 @@ export class WebGLRenderer {
         uniform vec2 u_cameraOffset;
         uniform float u_zoom;
         uniform vec2 u_logicalResolution;
+        uniform float u_time;
 
         void main() {
-            float tx = (float(a_instanceID) + 0.5) / 1024.0;
+            float maxInst = ${WebGLRenderer.MAX_INSTANCES}.0;
+            float tx = (float(a_instanceID) + 0.5) / maxInst;
             vec4 d1 = texture(u_orgTexture, vec2(tx, 0.1)); 
             vec2 pos = d1.xy;
             float size = d1.z;
             float skeletalLength = d1.w;
+
+            vec4 d3 = texture(u_orgTexture, vec2(tx, 0.5));
+            vec2 vel = d3.xy;
 
             vec4 d4 = texture(u_orgTexture, vec2(tx, 0.7));
             float sightRange = d4.z;
@@ -140,7 +148,27 @@ export class WebGLRenderer {
             float bodyBound = size + skeletalLength + 15.0;
             float quadSize = max(bodyBound, maxSense) + 20.0;
 
-            v_localCoord = a_unitPosition * quadSize;
+            // --- REACTIVE TRAILING STRETCH ---
+            float spd = length(vel);
+            vec2 moveDir = spd > 0.001 ? normalize(vel) : vec2(1.0, 0.0);
+            
+            // Push trailing vertices BACK (away from moveDir)
+            float stretchAmount = min(spd * 1.2, 4.5); 
+            vec2 stretchedPos = a_unitPosition * quadSize;
+            float projLen = dot(a_unitPosition, moveDir);
+            
+            // Only affect trailing half (projLen < 0)
+            stretchedPos -= moveDir * stretchAmount * max(-projLen, 0.0) * 1.5;
+
+            // --- SIDE-TO-SIDE JIGGLE ---
+            // Oscillation frequency and amplitude scale with speed
+            float jiggleFreq = 6.0 + spd * 10.0; 
+            float jiggleAmp = 0.2 + spd * 0.6;
+            float wobble = sin(u_time * jiggleFreq + float(a_instanceID) * 1.618) * jiggleAmp;
+            vec2 perpDir = vec2(-moveDir.y, moveDir.x);
+            stretchedPos += perpDir * wobble;
+
+            v_localCoord = stretchedPos;
             v_id = texture(u_orgTexture, vec2(tx, 0.3)).w;
             v_instanceID = a_instanceID;
             v_worldCenter = pos;
@@ -153,6 +181,8 @@ export class WebGLRenderer {
     `;
 
     private static FAUNA_FRAG_SHADER = `#version 300 es
+        // === GPGPU FAUNA FRAGMENT SHADER ===
+        // Inertial warp + smooth mating fusion + GPU visuals
         precision highp float;
         in vec2 v_localCoord;
         in float v_id;
@@ -187,7 +217,8 @@ export class WebGLRenderer {
         }
 
         void main() {
-            float tx = (float(v_instanceID) + 0.5) / 1024.0;
+            float maxInst = ${WebGLRenderer.MAX_INSTANCES}.0;
+            float tx = (float(v_instanceID) + 0.5) / maxInst;
             vec4 d1 = texture(u_orgTexture, vec2(tx, 0.1));
             vec2 pos = d1.xy;
             float size = d1.z;
@@ -203,24 +234,31 @@ export class WebGLRenderer {
             float isSelected = d3.w;
 
             vec4 d4 = texture(u_orgTexture, vec2(tx, 0.7));
-            float bending = d4.x; // EXPLICITLY DECLARING BENDING HERE
-            float mateIndex = d4.y; // Now stores index, not boolean
+            float bending = d4.x;
+            float mateIndex = d4.y;
             float sightRange = d4.z;
-            float audibleRange = d4.w;
+            float rawAudible = d4.w;
+            float isHearingActive = step(10000.0, rawAudible);
+            float audibleRange = mod(rawAudible, 10000.0);
 
             vec4 d5 = texture(u_orgTexture, vec2(tx, 0.9));
-            float commRange = d5.x;
-            float appearanceType = d5.y;
-            float glowIntensity = d5.z * 1.5; // BOOSTED GLOW INTENSITY
+            float rawComm = d5.x;
+            float isTransmittingActive = step(10000.0, rawComm);
+            float commRange = mod(rawComm, 10000.0);
+            // Unpack: d5.y = [isNoble (integer)] + [matingFactor (fractional)]
+            float isNoble = floor(d5.y);
+            float matingFactor = fract(d5.y);
+            float energyNorm = d5.z;
+            float turnForce = d5.w;
 
+            float glowIntensity = mix(0.65, 1.8, clamp(energyNorm * 1.5, 0.0, 1.0));
             vec2 dir = length(vel) > 0.001 ? normalize(vel) : vec2(1.0, 0.0);
-            float dist = length(v_localCoord);
             
             vec3 finalCol = vec3(0.0);
             float finalAlpha = 0.0;
+            float dist = length(v_localCoord);
 
-            // --- SENSORY (Differentiated: Vision=cone, Hearing=passive ring, Comm=radiating ping) ---
-            // VISION: Active directional cone
+            // --- SENSORY OVERLAYS ---
             if (u_showVision > 0.5 && dist < sightRange) {
                 vec2 rel = normalize(v_localCoord);
                 float angle = acos(clamp(dot(rel, dir), -1.0, 1.0));
@@ -230,8 +268,7 @@ export class WebGLRenderer {
                     finalAlpha = max(finalAlpha, intensity);
                 }
             }
-            // HEARING: Passive soft dashed ring at boundary (no radiating ping)
-            if (u_showHearing > 0.5 && dist < audibleRange + 4.0) {
+            if (max(u_showHearing, isHearingActive) > 0.5 && dist < audibleRange + 4.0) {
                 float pulse = 0.7 + 0.3 * sin(u_time * 1.5 + v_id * 0.3);
                 float dRingH = abs(dist - audibleRange) - 1.5;
                 if (dRingH < 3.0) {
@@ -242,8 +279,7 @@ export class WebGLRenderer {
                     finalAlpha = max(finalAlpha, ringAlpha);
                 }
             }
-            // COMMUNICATION / VOCAL RANGE: Radiating outward ping ripples
-            if (u_showCommunication > 0.5 && dist < commRange) {
+            if (max(u_showCommunication, isTransmittingActive) > 0.5 && dist < commRange) {
                 float ping1 = fract(u_time * 0.4 + v_id * 0.1);
                 float ping2 = fract(u_time * 0.4 + v_id * 0.1 + 0.5);
                 float dPing1 = abs(dist - ping1 * commRange);
@@ -257,96 +293,91 @@ export class WebGLRenderer {
                 finalAlpha = max(finalAlpha, ripple);
             }
 
-            // --- INSTANCED BODY RENDERING (Soft Jelly Logic) ---
+            // --- REFINED BODY RENDERING ---
             float softness = mix(0.1, 4.0, clamp(1.0 - u_zoom * 1.5, 0.0, 1.0));
-            
             vec2 perp = vec2(-dir.y, dir.x);
-            // Physics-based warp: turnForce is pre-computed cross product on CPU
-            float turnForce = d5.w;
             float spd = length(vel);
-            // Clamp turn warp to prevent extreme distortion
-            float warp = clamp(turnForce * 2.0, -8.0, 8.0);
-            // Gentle oscillation for idle "breathing" only when nearly stationary
-            float idleWobble = (1.0 - clamp(spd * 3.0, 0.0, 1.0)) * sin(u_time * 2.0 + v_id) * 0.3;
-            float totalWarp = bending + warp + idleWobble;
-            vec2 localP = v_localCoord;
-            float distAlong = dot(localP, dir);
-            vec2 warpedP = v_localCoord - (perp * totalWarp * 0.06 * distAlong);
             
+            // Inertial warp: subtle but visible curve when turning
+            float warp = clamp(turnForce * 3.0, -10.0, 10.0); 
+            float totalWarp = bending + warp;
+            float distAlong = dot(v_localCoord, dir);
+            vec2 warpedP = v_localCoord - (perp * totalWarp * 0.18 * distAlong);
+            
+            // NO DOUBLE STRETCH: Central body stays fixed, vertex shader handles tail drag
             vec2 pA = dir * (skeletalLength * 0.5);
             vec2 pB = -dir * (skeletalLength * 0.5);
-            float r = size * (0.95 + 0.05 * sin(u_time * 0.1 + v_id)); // Breathing effect
+            float r = size * (0.95 + 0.05 * sin(u_time * 0.1 + v_id));
             
             float dBody = sdCapsule(warpedP, pA, pB, r);
 
-            // --- MATING MERGE (Localized "Meatball") ---
-            if (mateIndex > -0.5) {
-                float mTx = (mateIndex + 0.5) / 1024.0;
+            // --- MEATBALL FUSION ---
+            if (mateIndex > -0.5 && matingFactor > 0.01) {
+                float mTx = (mateIndex + 0.5) / maxInst;
                 vec4 mD1 = texture(u_orgTexture, vec2(mTx, 0.1));
                 vec2 mPos = mD1.xy;
-                float mSize = mD1.z; // Use raw size for stability
-                
-                // Transform mate pos to local space
-                vec2 mLocal = mPos - v_worldCenter + v_localCoord;
-                float dMate = sdCircle(mLocal, mSize);
-                dBody = smin(dBody, dMate, 15.0); // Smooth blend
+                // Blend with partner's circle (approximation)
+                vec2 mLocal = (mPos - v_worldCenter); 
+                float dMate = sdCircle(v_localCoord - mLocal, mD1.z);
+                // Continuous blend: starts tight, melts fully, then separates
+                float k = mix(2.0, 18.0, 1.0 - abs(matingFactor * 2.0 - 1.0));
+                dBody = smin(dBody, dMate, k);
             }
             
             float bodyAlpha = smoothstep(softness, -softness, dBody);
             
-            // --- OUTLINE GLOW (Gradient edge halo) ---
-            // Render BEFORE body so it layers behind the opaque body
+            // Outline Glow
             if (dBody > 0.0 && dBody < 25.0) {
                 float outlineGlow = exp(-dBody * 0.12) * glowIntensity * 0.8;
                 finalCol += col * outlineGlow;
                 finalAlpha = max(finalAlpha, outlineGlow * 0.7);
             }
 
-            // Bioluminescent Glow (Pre-multiplied)
-            float glowFalloff = exp(-max(0.0, dBody) * 0.08);
-            vec3 bodyCol = col * (0.7 + 0.6 * glowFalloff * glowIntensity);
+            float glowFalloff = exp(-max(0.0, dBody) * 0.1);
+            float coreGradient = pow(clamp(1.0 - abs(dBody) / r, 0.0, 1.0), 3.0);
+            vec3 bodyCol = col * (0.6 + 0.8 * coreGradient + 0.5 * glowFalloff * glowIntensity);
 
-            // Profile Specific Tweaks (Noble Pulse)
-            if (appearanceType > 0.5) { 
-                float pulse = 0.5 + 0.5 * sin(u_time * 4.0 + v_id);
-                bodyCol *= (1.0 + 0.4 * pulse);
+            // GPU Pulsing: High energy or Noble status
+            float pulse = 0.5 + 0.5 * sin(u_time * 4.0 + v_id);
+            if (isNoble > 0.5) {
+                bodyCol *= (1.0 + 0.6 * pulse);
+            } else if (energyNorm > 0.85) {
+                bodyCol *= (1.0 + 0.2 * pulse);
             }
 
-            // Combine Body with Alpha
+            // Health Desaturation
+            float luma = dot(bodyCol, vec3(0.299, 0.587, 0.114));
+            bodyCol = mix(vec3(luma), bodyCol, 0.5 + 0.5 * energyNorm);
+
             vec3 finalBody = bodyCol * bodyAlpha;
             finalCol = mix(finalCol, finalBody, bodyAlpha);
             finalAlpha = max(finalAlpha, bodyAlpha);
 
-            // --- OVERLAYS (Eyes & Selection) ---
+            // Eyes & Selection (Static local relative to head/size)
             if (u_zoom > 0.5 && bodyAlpha > 0.01) {
                 vec2 eyeP1 = rotate(vec2(size * 0.75, size * 0.45), dir);
                 vec2 eyeP2 = rotate(vec2(size * 0.75, -size * 0.45), dir);
-                float eyeSize = size * 0.38;
+                float eyeSize = size * 0.35;
                 float dE = min(sdCircle(v_localCoord - eyeP1, eyeSize), sdCircle(v_localCoord - eyeP2, eyeSize));
                 if (dE < 2.0) {
                     float alphaE = smoothstep(1.5, -1.5, dE);
-                    float dPupil = min(sdCircle(v_localCoord - (eyeP1 + dir * eyeSize * 0.25), eyeSize * 0.45),
-                                       sdCircle(v_localCoord - (eyeP2 + dir * eyeSize * 0.25), eyeSize * 0.45));
+                    float dPupil = min(sdCircle(v_localCoord - (eyeP1 + dir * eyeSize * 0.25), eyeSize * 0.42),
+                                       sdCircle(v_localCoord - (eyeP2 + dir * eyeSize * 0.25), eyeSize * 0.42));
                     vec3 eCol = dPupil < 0.0 ? vec3(0.01) : vec3(1.0);
                     finalCol = mix(finalCol, eCol, alphaE);
                     finalAlpha = max(finalAlpha, alphaE);
                 }
             }
 
-            // Selection Rings (Instanced)
             float idDiff = abs(id - u_selectedId);
-            float hovDiff = abs(id - u_hoveredId);
-            if (idDiff < 0.1 || hovDiff < 0.1) {
-                float isSel = idDiff < 0.1 ? 1.0 : 0.0;
+            if (idDiff < 0.1 || abs(id - u_hoveredId) < 0.1) {
                 float ringSize = size + 14.0 + sin(u_time * 3.0) * 3.0;
                 float dRing = abs(length(v_localCoord) - ringSize) - 2.0;
                 if (dRing < 4.0) {
-                    float angle = atan(v_localCoord.y, v_localCoord.x);
-                    float dash = step(0.35, fract(angle * 10.0 / 6.28318 + u_time * 2.0));
-                    float opacity = (isSel > 0.5 ? 1.0 : 0.6) * smoothstep(2.0, -1.0, dRing) * (0.5 + 0.5 * dash);
-                    vec3 ringCol = isSel > 0.5 ? vec3(0.1, 0.7, 1.0) : vec3(0.5, 1.0, 0.8);
-                    finalCol = mix(finalCol, ringCol, opacity); // Additive ring
-                    finalAlpha = max(finalAlpha, opacity);
+                    float opacity = (idDiff < 0.1 ? 1.0 : 0.6) * smoothstep(2.0, -1.0, dRing);
+                    vec3 ringCol = idDiff < 0.1 ? vec3(0.1, 0.7, 1.0) : vec3(0.5, 1.0, 0.8);
+                    finalCol = mix(finalCol, ringCol, opacity * 0.5);
+                    finalAlpha = max(finalAlpha, opacity * 0.5);
                 }
             }
 
@@ -373,7 +404,8 @@ export class WebGLRenderer {
         uniform vec2 u_logicalResolution;
 
         void main() {
-            float tx = (float(a_instanceID) + 0.5) / 1024.0;
+            float maxInst = ${WebGLRenderer.MAX_INSTANCES}.0;
+            float tx = (float(a_instanceID) + 0.5) / maxInst;
             vec4 d1 = texture(u_floraTexture, vec2(tx, 0.25)); // x, y, growth, complexity
             vec2 fPos = d1.xy;
             float growth = d1.z;
@@ -522,15 +554,15 @@ export class WebGLRenderer {
         this.faunaUnitQuadBuffer = this.createQuad();
         this.floraUnitQuadBuffer = this.createQuad();
 
-        // Persistent instance ID buffer for 1024 entities
+        // Persistent instance ID buffer for 2048 entities (raised from 1024)
         this.instanceIDBuffer = this.gl.createBuffer()!;
-        const ids = new Int32Array(1024);
-        for (let i = 0; i < 1024; i++) ids[i] = i;
+        const ids = new Int32Array(WebGLRenderer.MAX_INSTANCES);
+        for (let i = 0; i < WebGLRenderer.MAX_INSTANCES; i++) ids[i] = i;
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceIDBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, ids, this.gl.STATIC_DRAW);
 
-        this.orgTexture = this.createDataTexture(1024, 5);
-        this.floraTexture = this.createDataTexture(1024, 2);
+        this.orgTexture = this.createDataTexture(WebGLRenderer.MAX_INSTANCES, 5);
+        this.floraTexture = this.createDataTexture(WebGLRenderer.MAX_INSTANCES, 2);
         this.terrainTexture = gl.createTexture()!;
     }
 
@@ -629,7 +661,7 @@ export class WebGLRenderer {
         // 2. Pack Fauna Data (reuse buffer + caches for performance)
         const orgData = this.orgDataBuffer;
         orgData.fill(0);
-        const orgCount = Math.min(visibleOrgs.length, 1024);
+        const orgCount = Math.min(visibleOrgs.length, WebGLRenderer.MAX_INSTANCES);
 
         // Build O(1) mate index lookup map
         const idToIdx = new Map<string, number>();
@@ -652,14 +684,14 @@ export class WebGLRenderer {
             orgData[b0] = org.position.x; orgData[b0 + 1] = org.position.y;
             orgData[b0 + 2] = pixSize * 0.4; orgData[b0 + 3] = pixSize * 0.2;
 
-            const b1 = (1024 + i) * 4;
+            const b1 = (WebGLRenderer.MAX_INSTANCES + i) * 4;
             orgData[b1] = r; orgData[b1 + 1] = g; orgData[b1 + 2] = b; orgData[b1 + 3] = parseFloat(org.id);
 
-            const b2 = (2048 + i) * 4;
+            const b2 = (WebGLRenderer.MAX_INSTANCES * 2 + i) * 4;
             orgData[b2] = org.velocity.x; orgData[b2 + 1] = org.velocity.y;
             orgData[b2 + 2] = org.expressedStats.sight_fov; orgData[b2 + 3] = org.id === params.selectedId ? 1.0 : 0.0;
 
-            const b3 = (3072 + i) * 4;
+            const b3 = (WebGLRenderer.MAX_INSTANCES * 3 + i) * 4;
             orgData[b3] = (org.bending || 0) * visuals.skeletalRigidity;
             // O(1) mate index lookup
             let mateIdx = -1.0;
@@ -669,17 +701,22 @@ export class WebGLRenderer {
             }
             orgData[b3 + 1] = mateIdx;
             orgData[b3 + 2] = UNIT_UTILS.mToPx(org.expressedStats.sight_range);
-            orgData[b3 + 3] = UNIT_UTILS.mToPx(org.expressedStats.audible_range || 3.0);
+            orgData[b3 + 3] = UNIT_UTILS.mToPx(org.expressedStats.audible_range || 3.0) + (org.isHearingActive ? 10000.0 : 0.0);
 
-            const b4 = (4096 + i) * 4;
-            orgData[b4] = UNIT_UTILS.mToPx(org.expressedStats.communicating_range || 1.5);
-            orgData[b4 + 1] = visuals.appearanceType;
-            orgData[b4 + 2] = visuals.glowIntensity;
+            const b4 = (WebGLRenderer.MAX_INSTANCES * 4 + i) * 4;
+            orgData[b4] = UNIT_UTILS.mToPx(org.expressedStats.communicating_range || 1.5) + (org.isTransmittingActive ? 10000.0 : 0.0);
+            // Pack visuals: matingFactor (fract) + isNoble (bool)
+            // d5.y: [isNoble: integer bit (0 or 1)] + [matingFactor: fractional (0.0-1.0)]
+            const isNoble = org.energy > 28000 ? 1.0 : 0.0; // Deriving nobility from energy peak for now
+            const matingFactor = (org.matingTimer && org.matingTimer > 0) ? (org.matingTimer / 120.0) : 0.0;
+            orgData[b4 + 1] = isNoble + matingFactor;
 
-            // Pack turn force (CPU-side cross product of prev vs current velocity)
+            orgData[b4 + 2] = Math.min(1.0, org.energy / 30000.0);
+
+            // Pack turn force: 5x multiplier for reactive leaning (lowered from 10x for stability)
             const prev = this.prevVelocities.get(org.id);
             if (prev) {
-                orgData[b4 + 3] = prev.x * org.velocity.y - prev.y * org.velocity.x;
+                orgData[b4 + 3] = (prev.x * org.velocity.y - prev.y * org.velocity.x) * 5.0;
             } else {
                 orgData[b4 + 3] = 0.0;
             }
@@ -691,25 +728,25 @@ export class WebGLRenderer {
             this.prevVelocities.set(org.id, { x: org.velocity.x, y: org.velocity.y });
         }
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.orgTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 1024, 5, gl.RGBA, gl.FLOAT, orgData);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, WebGLRenderer.MAX_INSTANCES, 5, gl.RGBA, gl.FLOAT, orgData);
 
         // 3. Pack Flora Data (reuse buffer)
         const floraData = this.floraDataBuffer;
         floraData.fill(0);
-        const floraCount = Math.min(visibleFlora.length, 1024);
+        const floraCount = Math.min(visibleFlora.length, WebGLRenderer.MAX_INSTANCES);
         for (let i = 0; i < floraCount; i++) {
             const f = visibleFlora[i];
             const base = i * 4;
             floraData[base] = f.position.x; floraData[base + 1] = f.position.y;
             floraData[base + 2] = f.growthState; floraData[base + 3] = f.complexity;
 
-            const colorBase = (1024 + i) * 4;
+            const colorBase = (WebGLRenderer.MAX_INSTANCES + i) * 4;
             const hsl = WebGLRenderer.parseHSL(f.color);
             floraData[colorBase] = hsl[0]; floraData[colorBase + 1] = hsl[1];
             floraData[colorBase + 2] = hsl[2]; floraData[colorBase + 3] = parseFloat(f.id);
         }
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.floraTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 1024, 2, gl.RGBA, gl.FLOAT, floraData);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, WebGLRenderer.MAX_INSTANCES, 2, gl.RGBA, gl.FLOAT, floraData);
 
         // 4. Pass 1: Terrain & Fauna
         gl.useProgram(this.program);

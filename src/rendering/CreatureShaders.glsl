@@ -1,3 +1,9 @@
+// =====================================================================
+// ⚠️  DEPRECATED — This legacy full-screen shader is no longer loaded.
+// All fauna/flora rendering is handled by instanced shaders embedded
+// in WebGLRenderer.ts (FAUNA_VERT/FRAG_SHADER, FLORA_VERT/FRAG_SHADER).
+// Kept for historical reference only.
+// =====================================================================
 #version 300 es
 in vec2 a_position;
 out vec2 v_texCoord;

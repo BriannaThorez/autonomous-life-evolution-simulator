@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScaleUtils } from '../src/rendering/ScaleUtils';
+import { ScaleUtils } from '../rendering/ScaleUtils';
 
 interface Props {
     show: boolean;
