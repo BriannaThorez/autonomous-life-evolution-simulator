@@ -72,13 +72,13 @@ export const SOCIAL_CONSTANTS = {\r
     PROLIFIC_MATING_THRESHOLD: 5,\r
     ELDER_AGE_MULTIPLIER: 2,\r
 };\r
-\r
+//Names are syllable count\r
 export const LINGUISTIC_CONSTANTS = {\r
     NAME_INHERITANCE_CHANCE: 0.05,\r
-    FIRST_NAME_SYLLABLES_MIN: 2,\r
-    FIRST_NAME_SYLLABLES_RANGE: 3,\r
+    FIRST_NAME_SYLLABLES_MIN: 1,\r
+    FIRST_NAME_SYLLABLES_RANGE: 1,\r
     SURNAME_SYLLABLES_MIN: 2,\r
-    SURNAME_SYLLABLES_RANGE: 4,\r
+    SURNAME_SYLLABLES_RANGE: 2,\r
 };\r
 \r
 export const GENETIC_CONSTANTS = {\r
@@ -98,7 +98,7 @@ export const GENETIC_CONSTANTS = {\r
 // --- POPULATION & REPRODUCTION CONSTANTS ---\r
 export const POPULATION_CONSTANTS = {\r
     INITIAL_ORGANISMS: 20,\r
-    INITIAL_FLORA: 90,\r
+    INITIAL_FLORA: 120,\r
     BLOOM_COUNT_MIN: 10,\r
     BLOOM_COUNT_MAX: 20,\r
     // BIRTH_COST_BASE operates as the total systemic energy required to construct a new lifeform.\r
@@ -122,8 +122,8 @@ export const REPRODUCTION_CONSTANTS = {\r
 \r
 // --- DEFAULT GENETIC RANGES ---\r
 export const DEFAULT_TRAIT_RANGES: Record<TraitName, [number, number]> = {\r
-    speed: [1.2, 1.5],\r
-    size: [75, 85],\r
+    speed: [1.8, 2.1],\r
+    size: [85, 95],\r
     metabolism: [0.4, 0.5],\r
     sight_range: [15, 18],\r
     sight_fov: [(85 * Math.PI) / 180, (95 * Math.PI) / 180],\r

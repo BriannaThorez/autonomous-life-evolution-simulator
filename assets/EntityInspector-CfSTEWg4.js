@@ -304,8 +304,8 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                   position="top"
                 >
                   <div className="flex items-center gap-1.5 cursor-help">
-                    <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest">Generation</span>
-                    <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
+                    <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>Generation&nbsp;</span>
+                    <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(235, 255, 143, 1)', fontFamily: 'monospace' }}>
                       {(entity as OrganismData).generation}
                     </span>
                   </div>
@@ -314,8 +314,8 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                 <span className="font-black px-1.5" style={{ color: 'rgba(255, 255, 255, 0.22)', fontSize: '12px' }}>|</span>
 
                 <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                  <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest">House</span>
-                  <span className="text-[var(--text-sm)] font-black truncate" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
+                  <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>House&nbsp;</span>
+                  <span className="text-[var(--text-sm)] font-black truncate" style={{ color: 'rgba(235, 255, 143, 1)', fontFamily: 'monospace' }}>
                     {(entity as OrganismData).surname}
                   </span>
                 </div>
