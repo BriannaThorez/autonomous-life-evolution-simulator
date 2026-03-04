@@ -146,7 +146,8 @@ export class SimulationEngine {\r
       config: this.config,\r
       events: [],\r
       apexCandidates: [],\r
-      seed: Math.random()\r
+      seed: Math.random(),\r
+      lastResetTime: new Date().toISOString()\r
     };\r
     this.lastId = 0;\r
     this.terrain = new TerrainManager(this.state.worldSize.x, this.state.worldSize.y);\r

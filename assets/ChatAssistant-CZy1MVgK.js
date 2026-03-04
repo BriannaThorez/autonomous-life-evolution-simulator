@@ -4,13 +4,12 @@ import { X } from 'lucide-react';
 import { useChat } from './useChat';
 import { ChatInterface } from './ChatInterface';
 import { ChatFloatingButton } from './ChatFloatingButton';
+import { SimulationState } from '../../../types';
 
 const SIMULATION_SYSTEM_INSTRUCTION = \`You are an expert biological simulation assistant and code consultant. 
 You have access to the codebase of this "Autonomous Life Evolution Simulator".
 Answer questions about how the simulation works, the genetics, the code base, or how to use the interface.
 Be concise and helpful. Use markdown for code snippets.\`;
-
-import { SimulationState } from '../../../types';
 
 interface ChatAssistantProps {
   simState: SimulationState;
@@ -19,16 +18,16 @@ interface ChatAssistantProps {
 export default function ChatAssistant({ simState }: ChatAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 80 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 60, y: window.innerHeight - 60 });
   const [isDragging, setIsDragging] = useState(false);
 
   const chatRef = useRef<HTMLDivElement>(null);
 
-  const { messages, isLoading, sendMessage } = useChat({
+  const { messages, isLoading, sendMessage, config } = useChat({
     systemInstruction: SIMULATION_SYSTEM_INSTRUCTION,
+    simState,
     title: "Simulation Oracle",
-    welcomeMessage: "Ask me anything about the simulation logic.",
-    simState
+    welcomeMessage: "Ask me anything about the simulation logic."
   });
 
   // Close on lose focus
@@ -45,7 +44,7 @@ export default function ChatAssistant({ simState }: ChatAssistantProps) {
   }, [isOpen]);
 
   const handleDrag = (e: any, info: any) => {
-    const newX = Math.min(Math.max(20, position.x + info.delta.x), window.innerWidth - 160);
+    const newX = Math.min(Math.max(20, position.x + info.delta.x), window.innerWidth - 100);
     const newY = Math.min(Math.max(20, position.y + info.delta.y), window.innerHeight - 60);
     setPosition({ x: newX, y: newY });
   };
@@ -59,12 +58,14 @@ export default function ChatAssistant({ simState }: ChatAssistantProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="absolute pointer-events-auto flex flex-col overflow-hidden"
+            className="absolute pointer-events-auto flex flex-col glass-modular fluid-rounded shadow-2xl overflow-hidden"
             style={{
-              left: Math.min(position.x - 380, window.innerWidth - 440),
-              top: Math.min(position.y - 420, window.innerHeight - 460),
-              width: '26.4rem',
+              left: Math.min(position.x - 400, window.innerWidth - 460),
+              top: Math.min(position.y - 440, window.innerHeight - 480),
+              width: '25rem',
               height: '28rem',
+              border: '1px solid rgba(162, 213, 171, 0.15)',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
             }}
           >
             <div className="relative h-full w-full">
@@ -72,8 +73,7 @@ export default function ChatAssistant({ simState }: ChatAssistantProps) {
                 messages={messages}
                 isLoading={isLoading}
                 onSendMessage={sendMessage}
-                title="Simulation Oracle"
-                welcomeMessage="Ask me anything about the simulation logic."
+                {...config}
               />
               <button
                 onClick={() => setIsOpen(false)}

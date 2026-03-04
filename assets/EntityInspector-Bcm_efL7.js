@@ -195,21 +195,49 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                 {entity.name}
               </div>
             </Tooltip>
-            {/* Sub-header row: Age (Left) and Bio Toggle (Right) */}
-            <div className="flex items-center justify-between w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}>
-              <div className="opacity-60 font-black" style={{ fontSize: 'var(--text-lg)', color: isFlora ? '#39AEA9' : '#A2D5AB' }}>
-                {isFauna ? \`\${currentHour} Hours \${daysInCurrentYear} days \${years} years\` : 'Biological Organism'}
+            {/* Age Readout & Lifespan Bar */}
+            <div className="flex flex-col w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}>
+              <div className="flex items-center justify-between w-full mb-1">
+                <div className="opacity-80 font-black tracking-tight" style={{ fontSize: 'var(--text-md)', color: isFlora ? '#39AEA9' : '#A2D5AB', whiteSpace: 'nowrap' }}>
+                  {isFauna ? \`\${currentHour} Hours \${daysInCurrentYear} days \${years} years\` : 'Biological Organism'}
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSection('bio'); }}
+                  className="transition-all juice-interactive"
+                  style={{
+                    fontSize: 'var(--text-lg)', fontWeight: 600, color: '#39AEA9',
+                    display: 'flex', alignItems: 'center', gap: '0.4rem', border: 'none', background: 'none'
+                  }}
+                >
+                  Bio {expandedSection === 'bio' ? '▲' : '▼'}
+                </button>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleSection('bio'); }}
-                className="transition-all juice-interactive"
-                style={{
-                  fontSize: 'var(--text-lg)', fontWeight: 600, color: '#39AEA9',
-                  display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', background: 'none'
-                }}
-              >
-                Bio {expandedSection === 'bio' ? '▲' : '▼'}
-              </button>
+
+              {/* Lifespan Progress Bar - Repurposed and Moved */}
+              {isFauna && (
+                <Tooltip
+                  title="Biological Pulse"
+                  content="This chronicle tracks the organism's remaining existence. The sand of time flows from full maturity toward the eventual return to simulation dust. Ensure energy remains sufficient to delay the inevitable."
+                  position="top"
+                >
+                  <div className="flex items-center gap-1.5 group/age-bar cursor-help py-1.5 hover:bg-white/[0.02] rounded transition-colors w-full">
+                    <span style={{ fontSize: '10px', opacity: 0.8, flexShrink: 0 }}>⏳</span>
+                    <div className="flex-1 flex-grow fluid-rounded-full overflow-hidden relative" style={{ height: '6px', background: 'rgba(255,255,255,0.1)', boxShadow: 'inset 0 0 4px rgba(0,0,0,0.5)', minWidth: '40px' }}>
+                      {/* Base Glow */}
+                      <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(90deg, transparent, rgba(57, 174, 169, 0.4), transparent)', filter: 'blur(4px)' }} />
+                      <div
+                        className="h-full transition-all duration-1000 shadow-[0_0_12px_rgba(57,174,169,0.7)]"
+                        style={{
+                          width: \`\${Math.max(0, 100 - (ageFrames / (entity as OrganismData).expressedStats.lifespan * 100))}%\`,
+                          background: 'linear-gradient(90deg, #13B8B3, #A2D5AB)',
+                          boxShadow: '0 0 8px rgba(57, 174, 169, 0.6)',
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontSize: '10px', opacity: 0.8 }}>⌛</span>
+                  </div>
+                </Tooltip>
+              )}
             </div>
           </div>
           <button
@@ -269,42 +297,30 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               className="w-full fluid-p-sm flex flex-col fluid-gap-xs"
               style={{ border: 'none', background: 'none', cursor: 'pointer' }}
             >
-              <div className="flex justify-between items-center w-full">
-                <div className="flex flex-col items-start">
-                  <Tooltip
-                    title="House Lineage"
-                    content="The generational count and house surname of this organism's lineage."
-                    position="top"
-                  >
-                    <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', textTransform: 'uppercase', cursor: 'help' }}>
-                      Generation
+              <div className="flex items-center gap-2 flex-wrap min-w-0 w-full mb-1">
+                <Tooltip
+                  title="House Lineage"
+                  content="The generational count and house surname of this organism's lineage."
+                  position="top"
+                >
+                  <div className="flex items-center gap-1.5 cursor-help">
+                    <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest">Generation</span>
+                    <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
+                      {(entity as OrganismData).generation}
                     </span>
-                  </Tooltip>
-                  <span className="text-[var(--text-sm)] font-black whitespace-nowrap" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
-                    {(entity as OrganismData).generation}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', paddingRight: '0.3rem' }}>
-                    House
-                  </span>
-                  <span className="text-[var(--text-sm)] font-black" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
+                  </div>
+                </Tooltip>
+
+                <span className="font-black px-1.5" style={{ color: 'rgba(255, 255, 255, 0.22)', fontSize: '12px' }}>|</span>
+
+                <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                  <span className="text-[var(--text-xs)] font-black opacity-30 uppercase tracking-widest">House</span>
+                  <span className="text-[var(--text-sm)] font-black truncate" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
                     {(entity as OrganismData).surname}
                   </span>
                 </div>
               </div>
-              <div className="w-full fluid-rounded-full overflow-hidden" style={{ height: '6px', background: 'rgba(255,255,255,0.05)' }}>
-                <div
-                  className="h-full transition-all duration-500 shadow-glow"
-                  style={{
-                    width: \`\${Math.min(100, ((entity as OrganismData).energy / POPULATION_CONSTANTS.BIRTH_COST_BASE) * 100)}%\`,
-                    // Changes to a pinkish/gold glow when threshold is met
-                    background: (entity as OrganismData).energy >= POPULATION_CONSTANTS.BIRTH_COST_BASE
-                      ? 'rgba(255, 105, 180, 1)'
-                      : 'rgba(109, 242, 235, 1)'
-                  }}
-                />
-              </div>
+              {/* Energy pulsing bar logic moved to energy section, Gen row bar removed as per request to repurpose for lifespan above */}
             </button>
             {expandedSection === 'relatives' && (
               <div
@@ -383,12 +399,17 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
                 </span>
               </div>
             </div>
-            <div className="w-full fluid-rounded-full overflow-hidden" style={{ height: '6px', background: 'rgba(255,255,255,0.05)' }}>
+            <div className="w-full fluid-rounded-full overflow-hidden relative" style={{ height: '6px', background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 0 4px rgba(0,0,0,0.5)' }}>
+              {/* Intelligent Base Glow */}
+              <div className={\`absolute inset-0 opacity-20 transition-opacity duration-500\`} style={{ background: isFlora ? '#A2D5AB' : '#39AEA9', filter: 'blur(6px)' }} />
               <div
-                className="h-full transition-all duration-500 shadow-glow"
+                className={\`h-full transition-all duration-500 shadow-glow relative z-10 \${!isFlora && (entity as OrganismData).energy < 5000 ? 'animate-pulse' : ''}\`}
                 style={{
                   width: \`\${isFlora ? ((entity as FloraData).growthState * 100) : Math.min(100, ((entity as OrganismData).energy / 30000) * 100)}%\`,
-                  background: isFlora ? '#A2D5AB' : '#39AEA9'
+                  background: isFlora ? 'linear-gradient(90deg, #39AEA9, #A2D5AB)' : 'linear-gradient(90deg, #13B8B3, #39AEA9)',
+                  boxShadow: \`0 0 12px \${isFlora ? '#A2D5AB66' : '#39AEA966'}\`,
+                  // Intelligent pulsing animation speed based on energy level
+                  animationDuration: !isFlora ? \`\${Math.max(0.2, ((entity as OrganismData).energy / 30000) * 2)}s\` : '2s'
                 }}
               />
             </div>

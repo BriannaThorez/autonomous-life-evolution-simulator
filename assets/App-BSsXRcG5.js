@@ -176,7 +176,6 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
 \r
     return (\r
         <div className="relative w-full h-screen select-none overflow-hidden" style={{ background: '#050505', color: '#e2e8f0' }}>\r
-            <ChatAssistant simState={simState} />\r
             {worker && (\r
                 <SimulationCanvas\r
                     worker={worker}\r
@@ -359,6 +358,28 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
                     />\r
                 )}\r
             </div>\r
+\r
+            {/* Chat Assistant — rendered after GUI layer to ensure correct z-order */}\r
+            <ChatAssistant simState={simState} />\r
+\r
+            {/* Last Reset Timestamp — lower-right corner */}\r
+            {simState.lastResetTime && (\r
+                <div\r
+                    className="absolute pointer-events-none"\r
+                    style={{\r
+                        bottom: 'var(--fluid-space-sm, 0.75rem)',\r
+                        right: 'var(--fluid-space-sm, 0.75rem)',\r
+                        fontFamily: 'monospace',\r
+                        fontSize: '0.55rem',\r
+                        color: '#A2D5AB',\r
+                        opacity: 0.35,\r
+                        letterSpacing: '0.05em',\r
+                        zIndex: 60\r
+                    }}\r
+                >\r
+                    RESET: {simState.lastResetTime}\r
+                </div>\r
+            )}\r
         </div>\r
     );\r
 };\r

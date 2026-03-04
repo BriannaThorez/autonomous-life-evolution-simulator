@@ -1,4 +1,4 @@
-const r=`\r
+const e=`\r
 import { SimulationEngine } from '../core/SimulationEngine';\r
 import { WebGLRenderer } from '../rendering/WebGLRenderer';\r
 import { SimulationState } from '../../types';\r
@@ -7,6 +7,7 @@ let engine: SimulationEngine | null = null;\r
 let renderer: WebGLRenderer | null = null;\r
 let lastTime = 0;\r
 let isPaused = false;\r
+let extinctionFrameCount = 0;\r
 let cameraParams = {\r
     cameraOffset: [0, 0] as [number, number],\r
     zoom: 1,\r
@@ -108,6 +109,34 @@ function tick(time: number) {\r
     if (!isPaused) {\r
         engine.update();\r
 \r
+        // --- Extinction Safety Check ---\r
+        if (engine.state.organisms.length === 0) {\r
+            extinctionFrameCount++;\r
+            if (extinctionFrameCount >= 300) {\r
+                console.warn('[Worker] Extinction detected — all organisms dead. Auto-resetting simulation.');\r
+                engine.hardReset();\r
+                renderer.updateTerrainTexture(engine.terrain, engine.state.worldSize);\r
+                extinctionFrameCount = 0;\r
+                self.postMessage({\r
+                    type: 'STATE_REFRESH',\r
+                    data: {\r
+                        time: engine.state.time,\r
+                        day: engine.state.day,\r
+                        hour: engine.state.hour,\r
+                        popCount: engine.state.organisms.length,\r
+                        floraCount: engine.state.Flora.length,\r
+                        events: engine.state.events.slice(0, 5),\r
+                        apexCandidates: engine.state.apexCandidates,\r
+                        selectedEntity: null,\r
+                        hoveredEntity: null,\r
+                        lastResetTime: engine.state.lastResetTime\r
+                    }\r
+                });\r
+            }\r
+        } else {\r
+            extinctionFrameCount = 0;\r
+        }\r
+\r
         // Handle Internal Camera Follow\r
         if (cameraParams.isFollowing && cameraParams.selectedId) {\r
             const followed = engine.state.organisms.find(o => o.id === cameraParams.selectedId);\r
@@ -147,7 +176,8 @@ function tick(time: number) {\r
                     events: engine.state.events.slice(0, 5),\r
                     apexCandidates: engine.state.apexCandidates,\r
                     selectedEntity: selectedEntity,\r
-                    hoveredEntity: hoveredEntity\r
+                    hoveredEntity: hoveredEntity,\r
+                    lastResetTime: engine.state.lastResetTime\r
                 }\r
             });\r
         }\r
@@ -183,4 +213,4 @@ function tick(time: number) {\r
 \r
     requestAnimationFrame(tick);\r
 }\r
-`;export{r as default};
+`;export{e as default};
