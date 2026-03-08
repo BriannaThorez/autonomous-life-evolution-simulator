@@ -70,8 +70,10 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
     const [apexExpanded, setApexExpanded] = useState(() => {\r
         return VectorDB.getSetting('apex_expanded', true);\r
     });\r
-    const [apexSort, setApexSort] = useState<'LINEAGE' | 'ENERGY' | 'AGE'>('LINEAGE');\r
+    const [apexSort, setApexSort] = useState<'LINEAGE' | 'ENERGY' | 'AGE'>('AGE');\r
     const [inspectorPos, setInspectorPos] = useState<Vector2>({ x: window.innerWidth - 300, y: 100 });\r
+    const [logPanelPos, setLogPanelPos] = useState<Vector2>({ x: 16, y: window.innerHeight - 250 });\r
+    const [logExpanded, setLogExpanded] = useState(true);\r
     const [showVision, setShowVision] = useState(() => {\r
         return VectorDB.getSetting('debug_vision', true);\r
     });\r
@@ -204,16 +206,16 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
                 }}\r
             >\r
 \r
-                <div className="absolute flex flex-col items-end gap-3" style={{ top: '1rem', right: '1rem' }}>\r
-                    <div className="flex gap-3 pointer-events-auto items-stretch h-12">\r
+                <div className="absolute" style={{ top: 'var(--fluid-space-sm)', right: 'var(--fluid-space-sm)' }}>\r
+                    <div className="hud-shell hud-command-cluster pointer-events-auto" style={{ gap: '0.42rem', padding: '0.34rem', borderRadius: '0.7rem' }}>\r
                         <Tooltip title="Neural Registry" content="Browse the full historical record of every entity that has existed in the simulation." position="left">\r
                             <button\r
                                 onClick={() => setShowVectorDB(true)}\r
-                                className="glass-modular px-5 rounded flex items-center gap-3 transition-all h-full"\r
-                                style={{ border: '1px solid rgba(57, 174, 169, 0.3)' }}\r
+                                className="hud-shell-strong rounded flex items-center gap-2 transition-all h-full juice-interactive"\r
+                                style={{ border: '1px solid rgba(57, 174, 169, 0.3)', padding: '0.52rem 0.78rem', borderRadius: '0.56rem' }}\r
                             >\r
                                 <div className="rounded-full shadow-glow" style={{ width: '8px', height: '8px', background: '#39AEA9' }} />\r
-                                <span className="text-[0.75rem] font-black tracking-[0.2em] litho-text uppercase">Registry</span>\r
+                                <span className="text-[0.75rem] font-black tracking-[0.16em] litho-text uppercase">Registry</span>\r
                             </button>\r
                         </Tooltip>\r
 \r
@@ -235,8 +237,8 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
                         <Tooltip title="Engine Settings" content="Configure visual scaling, simulation speed, and master reset parameters." position="left">\r
                             <button\r
                                 onClick={() => setShowSettings(true)}\r
-                                className="glass-modular px-4 rounded flex items-center justify-center transition-all h-full"\r
-                                style={{ border: '1px solid rgba(162, 213, 171, 0.2)' }}\r
+                                className="hud-shell rounded flex items-center justify-center transition-all h-full juice-interactive"\r
+                                style={{ border: '1px solid rgba(162, 213, 171, 0.2)', padding: '0.52rem 0.72rem', borderRadius: '0.56rem' }}\r
                             >\r
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A2D5AB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>\r
                             </button>\r
@@ -245,7 +247,7 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
                 </div>\r
 \r
                 {/* Top-Left HUD & Registry */}\r
-                <div className="absolute flex flex-row fluid-gap-xs items-start" style={{ top: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)' }}>\r
+                <div className="absolute flex flex-row items-start" style={{ top: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)', gap: '0.32rem' }}>\r
                     <ChronosHUD\r
                         simState={simState}\r
                         onOpenRegistry={() => setShowVectorDB(true)}\r
@@ -307,40 +309,40 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
                     onCancel={() => setResetConfirm(false)}\r
                 />\r
 \r
-                {/* Bottom Notification Panel */}\r
-                <div className="absolute pointer-events-auto" style={{ bottom: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)' }}>\r
-                    <NotificationPanel\r
-                        events={simState.events}\r
-                        onFocus={(pos, entityId) => {\r
-                            setTargetFocus(pos);\r
-                            if (entityId) setSelectedId(entityId);\r
-                        }}\r
-                    />\r
-                </div>\r
-\r
-                {/* Control Bar */}\r
-                <div\r
-                    className="absolute glass-modular flex items-center fluid-gap-md fluid-px-lg fluid-py-sm fluid-rounded-md pointer-events-auto"\r
-                    style={{\r
-                        bottom: 'var(--fluid-space-sm)', left: '50%', transform: 'translateX(-50%)',\r
-                        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)'\r
+                <NotificationPanel\r
+                    events={simState.events}\r
+                    expanded={logExpanded}\r
+                    onToggleExpanded={() => setLogExpanded(prev => !prev)}\r
+                    position={logPanelPos}\r
+                    onPositionChange={setLogPanelPos}\r
+                    onFocus={(pos, entityId) => {\r
+                        setTargetFocus(pos);\r
+                        if (entityId) setSelectedId(entityId);\r
                     }}\r
-                >\r
-                    <button\r
-                        onClick={() => setIsPaused(!isPaused)}\r
-                        className="transition-all juice-interactive"\r
-                        style={{ color: '#A2D5AB', border: 'none', background: 'none', cursor: 'pointer' }}\r
-                    >\r
-                        {isPaused ? (\r
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>\r
-                        ) : (\r
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>\r
+                />\r
+\r
+                {/* Bottom Control Bar */}\r
+                <div className="absolute pointer-events-none" style={{ bottom: 'var(--fluid-space-sm)', right: 'var(--fluid-space-sm)' }}>\r
+                    <div className="hud-shell hud-control-bar fluid-rounded-lg pointer-events-auto ml-auto" style={{ gap: '0.55rem', padding: '0.44rem 0.72rem', minHeight: '2.45rem' }}>\r
+                        <button\r
+                            onClick={() => setIsPaused(!isPaused)}\r
+                            className="transition-all juice-interactive"\r
+                            style={{ color: '#A2D5AB', border: 'none', background: 'none', cursor: 'pointer' }}\r
+                        >\r
+                            {isPaused ? (\r
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>\r
+                            ) : (\r
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>\r
+                            )}\r
+                        </button>\r
+                        <div className="hud-metric-pill text-[var(--text-xs)] litho-text font-black" style={{ color: '#39AEA9', opacity: 0.78, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.08em' }}>\r
+                            VDB: {VectorDB.saveCount} saves | {VectorDB.lastSaveOrgCount} orgs | {VectorDB.lastSaveMs.toFixed(0)}ms\r
+                        </div>\r
+                        {simState.lastResetTime && (\r
+                            <div className="hud-metric-pill text-[var(--text-xs)] litho-text font-black" style={{ color: '#A2D5AB', opacity: 0.72, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.06em' }}>\r
+                                RESET: {simState.lastResetTime}\r
+                            </div>\r
                         )}\r
-                    </button>\r
-                    <div className="text-[var(--text-xs)] italic litho-text font-black uppercase" style={{ color: '#A2D5AB', opacity: 0.3, letterSpacing: '0.3em' }}>Chronos Engine v6.1</div>\r
-                    {/* VectorDB Status Indicator */}\r
-                    <div className="text-[var(--text-xs)] litho-text font-black" style={{ color: '#39AEA9', opacity: 0.4, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.1em' }}>\r
-                        VDB: {VectorDB.saveCount} saves • {VectorDB.lastSaveOrgCount} orgs • {VectorDB.lastSaveMs.toFixed(0)}ms\r
                     </div>\r
                 </div>\r
 \r
@@ -362,24 +364,7 @@ const App: React.FC<AppProps> = ({ savedState }) => {\r
             {/* Chat Assistant — rendered after GUI layer to ensure correct z-order */}\r
             <ChatAssistant simState={simState} />\r
 \r
-            {/* Last Reset Timestamp — lower-right corner */}\r
-            {simState.lastResetTime && (\r
-                <div\r
-                    className="absolute pointer-events-none"\r
-                    style={{\r
-                        bottom: 'var(--fluid-space-sm, 0.75rem)',\r
-                        right: 'var(--fluid-space-sm, 0.75rem)',\r
-                        fontFamily: 'monospace',\r
-                        fontSize: '0.55rem',\r
-                        color: '#A2D5AB',\r
-                        opacity: 0.35,\r
-                        letterSpacing: '0.05em',\r
-                        zIndex: 60\r
-                    }}\r
-                >\r
-                    RESET: {simState.lastResetTime}\r
-                </div>\r
-            )}\r
+\r
         </div>\r
     );\r
 };\r

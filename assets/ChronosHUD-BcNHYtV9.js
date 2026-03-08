@@ -26,17 +26,16 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {\r
     );\r
 \r
     return (\r
-        <div className="flex flex-col fluid-gap-sm pointer-events-none">\r
+        <div className="flex flex-col pointer-events-none hud-side-stack" style={{ gap: '0.32rem' }}>\r
             {/* Time Card - Isolated Row */}\r
             <div className="flex">\r
                 <Tooltip title="Time Standardization" content={timeTooltipContent} position="right">\r
                     <div\r
                         onClick={onOpenRegistry}\r
-                        className="glass-modular fluid-rounded relative group pointer-events-auto cursor-pointer juice-interactive flex flex-col"\r
+                        className="hud-shell fluid-rounded-lg relative group pointer-events-auto cursor-pointer juice-interactive flex flex-col overflow-hidden"\r
                         style={{\r
-                            width: '8rem',\r
-                            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',\r
-                            border: '1px solid rgba(255, 255, 255, 0.05)'\r
+                            width: '10.15rem',\r
+                            minHeight: '9.55rem'\r
                         }}\r
                         onMouseEnter={() => {\r
                             document.body.style.cursor = 'pointer';\r
@@ -47,17 +46,20 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {\r
                     >\r
                         {/* Compact Header */}\r
                         <div\r
-                            className="fluid-rounded-t fluid-px-sm fluid-py-xs h-full w-full"\r
-                            style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}\r
+                            className="hud-header-strip fluid-rounded-t h-full w-full"\r
+                            style={{ padding: '0.2rem 0.34rem' }}\r
                         >\r
-                            <div className="relative h-full w-full opacity-30 text-[0.7rem] font-black litho-text uppercase tracking-[0.3em]" style={{ color: '#A2D5AB' }}>\r
+                            <div\r
+                                className="relative h-full w-full opacity-30 font-black litho-text uppercase"\r
+                                style={{ fontSize: '0.62rem', letterSpacing: '0.2em', color: '#A2D5AB' }}\r
+                            >\r
                                 Chronos Layer\r
                             </div>\r
                         </div>\r
 \r
-                        <div className="flex flex-col items-center text-center p-2 gap-1">\r
+                        <div className="flex flex-col items-center text-center" style={{ padding: '0.4rem 0.45rem 0.25rem', gap: '0.18rem' }}>\r
                             {/* 24-Hour Clock Visualization - Slightly Scaled Down */}\r
-                            <div className="relative flex-col flex-shrink-0 bg-black/20 rounded-full border border-white/5 p-1 w-12 h-12">\r
+                            <div className="relative flex-col flex-shrink-0 bg-black/20 rounded-full border border-white/5 p-1 w-12 h-12" style={{ width: '8.5rem', height: '8.5rem', maxWidth: '8.5rem', maxHeight: '8.5rem' }}>\r
                                 <svg viewBox="0 0 100 100" className="w-full h-full">\r
                                     <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="18" />\r
                                     {Array.from({ length: 24 }).map((_, i) => {\r
@@ -81,11 +83,11 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {\r
                             </div>\r
 \r
                             {/* Clock Text Details */}\r
-                            <div className="flex flex-col">\r
-                                <div className="text-[0.65rem] font-bold uppercase text-white/50 leading-none">\r
+                            <div className="flex flex-col" style={{ gap: '0.08rem' }}>\r
+                                <div className="font-bold uppercase text-white/50 leading-none" style={{ fontSize: '0.58rem' }}>\r
                                     Hour {simState.hour}\r
                                 </div>\r
-                                <div className="text-[0.65rem] font-black uppercase mt-1" style={{ color: '#E5EFC1' }}>\r
+                                <div className="font-black uppercase" style={{ fontSize: '0.62rem', marginTop: '0.02rem', color: '#E5EFC1' }}>\r
                                     Day {(simState.day % SIM_CONSTANTS.DAYS_PER_SEASON) + 1} <span style={{ color: '#39AEA9' }}>Season {season}</span>\r
                                 </div>\r
                             </div>\r
@@ -93,9 +95,8 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {\r
 \r
                         {/* Minimal Julian Day Footer */}\r
                         <div\r
-                            className="px-2 pb-2"\r
                             style={{\r
-                                fontSize: '0.6rem', color: '#A2D5AB', opacity: 1.0, fontFamily: 'Lexend Deca', textAlign: 'center'\r
+                                fontSize: '0.55rem', color: '#A2D5AB', opacity: 0.95, fontFamily: 'Lexend Deca', textAlign: 'center', padding: '0 0.4rem 0.35rem'\r
                             }}\r
                         >\r
                             Cycle {simState.cycle} • Julian {(simState.day % daysPerYear) + 1}\r
@@ -109,27 +110,27 @@ const ChronosHUD: React.FC<Props> = ({ simState, onOpenRegistry }) => {\r
                 <Tooltip title="Biosphere Details" content="Detailed biological metrics and ancestry registry." position="right">\r
                     <div\r
                         onClick={onOpenRegistry}\r
-                        className="glass-modular fluid-rounded group relative pointer-events-auto cursor-pointer juice-interactive flex flex-col"\r
-                        style={{ minWidth: '9rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)' }}\r
+                        className="hud-shell fluid-rounded-lg group relative pointer-events-auto cursor-pointer juice-interactive flex flex-col overflow-hidden"\r
+                        style={{ minWidth: '10.15rem' }}\r
                     >\r
                         <div\r
-                            className="fluid-rounded-t fluid-p-sm fluid-pb-xs"\r
-                            style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.25rem' }}\r
+                            className="hud-header-strip fluid-rounded-t"\r
+                            style={{ marginBottom: '0.14rem', padding: '0.2rem 0.34rem' }}\r
                         >\r
-                            <div className="opacity-30 text-[var(--text-xs)] font-black litho-text uppercase" style={{ color: '#A2D5AB', letterSpacing: '0.4em' }}>\r
+                            <div className="opacity-30 font-black litho-text uppercase" style={{ color: '#A2D5AB', letterSpacing: '0.24em', fontSize: '0.6rem', lineHeight: 1 }}>\r
                                 Biosphere\r
                             </div>\r
                         </div>\r
 \r
-                        <div className="p-3" style={{ paddingTop: '0.1rem' }}>\r
-                            <div className="text-sm font-black litho-text uppercase" style={{ color: '#E5EFC1', fontFamily: 'Lexend Deca' }}>\r
+                        <div style={{ padding: '0.35rem 0.45rem 0.45rem' }}>\r
+                            <div className="font-black litho-text uppercase" style={{ color: '#E5EFC1', fontFamily: 'Lexend Deca', fontSize: '0.82rem', lineHeight: 1 }}>\r
                                 {simState.popCount ?? 0} <span style={{ color: '#E5EFC1', fontSize: '0.7rem', opacity: 0.7, letterSpacing: '0.2em' }}>Fauna</span>\r
                             </div>\r
                             <div\r
                                 className="flex items-center gap-2 litho-text uppercase font-black"\r
                                 style={{\r
-                                    marginTop: '0.25rem', paddingTop: '0.1rem', borderTop: '1px solid rgba(255,255,255,0.05)',\r
-                                    fontSize: '0.85rem', color: '#A2D5AB', opacity: 0.8\r
+                                    marginTop: '0.16rem', paddingTop: '0.12rem', borderTop: '1px solid rgba(255,255,255,0.05)',\r
+                                    fontSize: '0.74rem', color: '#A2D5AB', opacity: 0.8, lineHeight: 1\r
                                 }}\r
                             >\r
                                 <span style={{ color: '#E5EFC1' }}>{simState.floraCount ?? 0}</span>\r

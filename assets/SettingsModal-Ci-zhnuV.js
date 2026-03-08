@@ -1,6 +1,5 @@
 const e=`import React from 'react';\r
 import { ScaleUtils } from '../rendering/ScaleUtils';\r
-import { VectorDB } from '../data/VectorDB';\r
 \r
 interface Props {\r
     show: boolean;\r
@@ -63,27 +62,6 @@ const SettingsModal: React.FC<Props> = ({\r
                             >\r
                                 <div className={\`absolute top-1 left-1 w-4 h-4 fluid-rounded-full bg-white transition-all duration-300 \${autoscaleEnabled ? 'translate-x-6' : ''}\`} />\r
                             </button>\r
-                        </div>\r
-                    </div>\r
-\r
-                    <div className="pt-8 border-t border-white/5">\r
-                        <div className="flex justify-between items-center mb-4">\r
-                            <span className="text-[var(--text-xs)] text-[#39AEA9] opacity-50 font-black tracking-[0.3em] uppercase">Neural Oracle Configuration</span>\r
-                        </div>\r
-                        <div className="space-y-4">\r
-                            <div className="flex flex-col gap-2">\r
-                                <label className="text-[var(--text-xs)] text-[#E5EFC1] font-black uppercase tracking-widest opacity-60">Gemini API Key</label>\r
-                                <input\r
-                                    type="password"\r
-                                    placeholder="Enter Oracle Key..."\r
-                                    value={VectorDB.getSetting('gemini_api_key', '')}\r
-                                    onChange={(e) => {\r
-                                        VectorDB.setSetting('gemini_api_key', e.target.value);\r
-                                    }}\r
-                                    className="w-full bg-black/40 border border-white/10 rounded-md py-2 px-3 text-[var(--text-sm)] text-[#A2D5AB] focus:outline-none focus:border-[#39AEA9] transition-colors font-mono"\r
-                                />\r
-                                <p className="text-[10px] text-white/20 font-black uppercase tracking-tighter">Key is stored locally in the Biosphere Database.</p>\r
-                            </div>\r
                         </div>\r
                     </div>\r
 \r

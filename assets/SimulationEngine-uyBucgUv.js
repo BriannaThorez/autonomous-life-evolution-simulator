@@ -3,7 +3,7 @@ import { VectorMath } from './VectorMath';\r
 import { Genetics as GeneticsEngine } from '../evolution/GeneticsEngine';\r
 import { Metabolism } from '../entities/Fauna/Metabolism';\r
 import { VectorDB } from '../data/VectorDB';\r
-import { LinguisticEngine } from '../entities/Fauna/LinguisticEngine';\r
+import { LinguisticEngine } from '../entities/Fauna/Language/LinguisticEngine';\r
 import { SpatialGrid } from './SpatialGrid';\r
 import { TerrainManager } from './TerrainManager';\r
 import { SIM_CONSTANTS, UNIT_UTILS, WORLD_CONSTANTS, POPULATION_CONSTANTS, CHRONOS_UTILS, DEFAULT_TRAIT_RANGES } from './Constants';\r
@@ -168,6 +168,10 @@ export class SimulationEngine {\r
       : GeneticsEngine.createRandomGenome(this.state.config));\r
 \r
     const expressedStats = GeneticsEngine.express(genome);\r
+    // Active fauna identity path: IDs come from SimulationEngine.lastId, and names use the simple\r
+    // LinguisticEngine piecewise path below. We intentionally do NOT use\r
+    // LinguisticEngine.constructFullLinguisticProfile() here because the current simulation should not\r
+    // inherit first names, add Roman numeral suffixes, or auto-assign noble/house lineage metadata at birth.\r
     const firstName = LinguisticEngine.generateFirstName();\r
     const finalSurname = parentA ? (parentB ? (Math.random() > 0.5 ? parentA.surname : parentB.surname) : parentA.surname) : LinguisticEngine.generateSurname();\r
 \r

@@ -2,7 +2,6 @@ const t=`import { Vector2, OrganismData, EntityStats, Genome, Memory } from '../
 import { VectorMath } from '../../core/VectorMath';\r
 import { Metabolism } from './Metabolism';\r
 import { Genetics } from '../../evolution/GeneticsEngine';\r
-import { LinguisticEngine } from './LinguisticEngine';\r
 import { UNIT_UTILS } from '../../core/Constants';\r
 \r
 export class Fauna {\r

@@ -1,7 +1,8 @@
 const r=`import { Fauna } from '../Base';\r
 import { Vector2, OrganismData, FloraData, SimulationState } from '../../../../types';\r
-import { SIM_CONSTANTS, SOCIAL_CONSTANTS } from '../../../core/Constants';\r
-import { LinguisticEngine } from '../LinguisticEngine';\r
+import { SIM_CONSTANTS } from '../../../core/Constants';\r
+import { SOCIAL_CONSTANTS } from '../Language/Constants';\r
+import { LinguisticEngine } from '../Language/LinguisticEngine';\r
 import { Brain } from '../Cognition/Brain';\r
 \r
 export class SpeciesALogic extends Fauna {\r

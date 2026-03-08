@@ -78,12 +78,18 @@ export class MemorySystem {\r
 \r
         // 5. Create New Memory\r
 \r
+        const defaultDuration = SIM_CONSTANTS.FRAMES_PER_DAY * COGNITIVE_CONSTANTS.DAYS_TO_REMEMBER;\r
+        const minimumFoodDuration = SIM_CONSTANTS.FRAMES_PER_HOUR * 12;\r
+        const memoryDuration = type === 'Food'\r
+            ? Math.max(minimumFoodDuration, defaultDuration / 4)\r
+            : defaultDuration;\r
+\r
         this.data.memories.push({\r
             id: Math.random().toString(36).substr(2, 5),\r
             type,\r
             position: { ...position },\r
             timestamp: currentTime,\r
-            duration: SIM_CONSTANTS.FRAMES_PER_DAY * COGNITIVE_CONSTANTS.DAYS_TO_REMEMBER, // Remember for 2 days (in frames)\r
+            duration: memoryDuration,\r
             content,\r
             count: 1,\r
             data,\r

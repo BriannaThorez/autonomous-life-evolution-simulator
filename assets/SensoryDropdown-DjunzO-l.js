@@ -26,10 +26,11 @@ const SensoryDropdown: React.FC<Props> = ({\r
     const Toggle = ({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon: string }) => (\r
         <button\r
             onClick={onClick}\r
-            className={\`w-full flex items-center justify-between p-2 rounded transition-all juice-interactive\r
+            className={\`w-full flex items-center justify-between rounded transition-all juice-interactive\r
                 \${active ? 'bg-[#39AEA9]/20 border border-[#39AEA9]/40' : 'bg-white/5 border border-white/5 hover:bg-white/10'}\`}\r
+            style={{ padding: '0.42rem 0.5rem' }}\r
         >\r
-            <span className="text-[0.6rem] font-black uppercase tracking-widest text-[#E5EFC1] opacity-80 flex items-center gap-2">\r
+            <span className="text-[0.56rem] font-black uppercase tracking-[0.16em] text-[#E5EFC1] opacity-80 flex items-center gap-2">\r
                 <span>{icon}</span> {label}\r
             </span>\r
             <div className={\`w-6 h-3 rounded-full relative transition-all duration-300 \${active ? 'bg-[#39AEA9] shadow-[0_0_8px_#39AEA9]' : 'bg-black/50'}\`}>\r
@@ -47,9 +48,10 @@ const SensoryDropdown: React.FC<Props> = ({\r
             >\r
                 {/* Clean, un-bloated hover trigger button aligned with Registry */}\r
                 <button\r
-                    className="glass-modular rounded flex items-center justify-center transition-all h-full px-4"\r
+                    className="glass-modular rounded flex items-center justify-center transition-all h-full"\r
                     style={{\r
-                        paddingTop: '0.6rem', paddingBottom: '0.6rem',\r
+                        padding: '0.5rem 0.72rem',\r
+                        borderRadius: '0.56rem',\r
                         border: '1px solid rgba(57, 174, 169, 0.4)',\r
                         background: showMasterDebug ? 'rgba(57, 174, 169, 0.15)' : 'rgba(57, 174, 169, 0.05)',\r
                         boxShadow: isOpen || showMasterDebug ? '0 0 15px rgba(57, 174, 169, 0.2)' : 'none'\r
@@ -62,17 +64,18 @@ const SensoryDropdown: React.FC<Props> = ({\r
 \r
                 {isOpen && (\r
                     <div\r
-                        className="absolute top-full right-0 glass-modular p-3 rounded-md flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200"\r
+                        className="absolute top-full right-0 glass-modular rounded-md flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200"\r
                         style={{\r
                             zIndex: 1001,\r
                             border: '1px solid rgba(57, 174, 169, 0.2)',\r
                             background: 'rgba(5, 5, 5, 0.95)',\r
-                            minWidth: '200px',\r
-                            marginTop: '0.5rem'\r
+                            minWidth: '11.4rem',\r
+                            marginTop: '0.38rem',\r
+                            padding: '0.55rem'\r
                         }}\r
                     >\r
-                        <div className="flex items-center justify-between border-b border-[#39AEA9]/20 pb-2 mb-1">\r
-                            <span className="text-[0.65rem] litho-text font-black uppercase tracking-[0.2em] text-[#39AEA9]">Global Override</span>\r
+                        <div className="flex items-center justify-between border-b border-[#39AEA9]/20" style={{ paddingBottom: '0.32rem', marginBottom: '0.14rem' }}>\r
+                            <span className="text-[0.58rem] litho-text font-black uppercase tracking-[0.16em] text-[#39AEA9]">Global Override</span>\r
                             <div onClick={() => onToggleMasterDebug(!showMasterDebug)} className="cursor-pointer">\r
                                 <div className={\`w-8 h-4 rounded-full relative transition-all duration-300 \${showMasterDebug ? 'bg-[#39AEA9] shadow-[0_0_10px_#39AEA988]' : 'bg-white/10'}\`}>\r
                                     <div className={\`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-all duration-300 \${showMasterDebug ? 'translate-x-4' : ''}\`} />\r

@@ -27,11 +27,7 @@ export const ChatFloatingButton: React.FC<ChatFloatingButtonProps> = ({
         width: isHovered && !isOpen ? 'auto' : '2.5rem', // Smaller size
         paddingRight: isHovered && !isOpen ? '1rem' : '0rem'
       }}
-      className={\`h-[2.5rem] glass-modular fluid-rounded-full shadow-2xl flex items-center justify-center gap-2 overflow-hidden pointer-events-auto relative group transition-all duration-300\`}
-      style={{
-        background: isOpen ? 'rgba(57, 174, 169, 0.15)' : 'rgba(0,0,0,0.6)',
-        borderColor: isOpen ? 'rgba(57, 174, 169, 0.4)' : 'rgba(162, 213, 171, 0.12)'
-      }}
+      className={\`h-[2.5rem] \${isOpen ? 'bg-white/10' : 'bg-black/60'} backdrop-blur-md border border-white/10 rounded-full shadow-2xl flex items-center justify-center gap-2 overflow-hidden pointer-events-auto relative group\`}
     >
       {/* Glowing Pulse Effect */}
       {!isOpen && (
@@ -47,7 +43,7 @@ export const ChatFloatingButton: React.FC<ChatFloatingButtonProps> = ({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
-            className="text-[var(--text-xs)] font-black whitespace-nowrap text-[#A2D5AB] pr-2 litho-text uppercase tracking-widest"
+            className="text-xs font-bold whitespace-nowrap text-emerald-100 pr-2"
           >
             {label}
           </motion.span>

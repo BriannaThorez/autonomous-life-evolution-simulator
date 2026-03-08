@@ -38,12 +38,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden pointer-events-auto">
+    <div className="flex flex-col h-full w-full bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto resize-y min-h-[200px] max-h-[80vh]">
       {/* Header */}
-      <div className="fluid-p-sm border-b border-white/5 flex items-center justify-between bg-white/[0.05]">
+      <div className="p-1.5 border-b border-white/5 flex items-center justify-between bg-white/5">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#E5EFC1] shadow-[0_0_8px_#E5EFC1]" />
-          <span className="text-[var(--text-xs)] font-black uppercase tracking-[0.3em] opacity-80 litho-text text-[#E5EFC1]">{title}</span>
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[0.6rem] font-bold uppercase tracking-widest opacity-70">{title}</span>
         </div>
       </div>
 
@@ -57,9 +57,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         )}
         {messages.map((m, i) => (
           <div key={i} className={\`flex \${m.role === 'user' ? 'justify-end' : 'justify-start'}\`}>
-            <div className={\`max-w-[95%] fluid-p-sm fluid-rounded text-[var(--text-sm)] leading-relaxed \${m.role === 'user'
-              ? 'bg-[#39AEA922] border border-[#39AEA944] text-[#E5EFC1]'
-              : 'bg-white/[0.03] border border-white/10 text-white/90 shadow-sm'
+            <div className={\`max-w-[95%] p-2 rounded-xl text-[0.8rem] leading-relaxed \${m.role === 'user'
+              ? 'bg-emerald-600/20 border border-emerald-500/20 text-emerald-50'
+              : 'bg-white/5 border border-white/10 text-white/90'
               }\`}>
               <div className="markdown-body">
                 <Markdown>{m.text}</Markdown>
@@ -80,7 +80,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Input */}
-      <div className="fluid-p-sm bg-black/40 border-t border-white/5">
+      <div className="p-1.5 bg-white/5 border-t border-white/5">
         <div className="relative">
           <input
             type="text"
@@ -88,14 +88,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={placeholder}
-            className="w-full bg-white/[0.02] border border-white/10 fluid-rounded-md fluid-py-sm pl-4 pr-10 text-[var(--text-sm)] text-[#A2D5AB] focus:outline-none focus:border-[#39AEA966] transition-all font-mono"
+            className="w-full bg-black/40 border border-white/10 rounded-xl py-1.5 pl-3 pr-10 text-[0.8rem] focus:outline-none focus:border-emerald-500/50 transition-colors"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#39AEA9] hover:text-[#A2D5AB] disabled:opacity-20 transition-all juice-interactive"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-emerald-400 hover:text-emerald-300 disabled:opacity-30 transition-colors"
           >
-            <Send size={18} />
+            <Send size={16} />
           </button>
         </div>
       </div>

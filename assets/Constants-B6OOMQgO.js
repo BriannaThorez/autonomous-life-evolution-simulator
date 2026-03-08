@@ -1,4 +1,6 @@
-const r=`import { TraitName } from '../../types';\r
+const r=`import { LINGUISTIC_CONSTANTS as LANGUAGE_LINGUISTIC_CONSTANTS, SOCIAL_CONSTANTS as LANGUAGE_SOCIAL_CONSTANTS } from '../entities/Fauna/Language/Constants';\r
+\r
+import { TraitName } from '../../types';\r
 \r
 // --- WORLD SPACE ---\r
 export const WORLD_CONSTANTS = {\r
@@ -66,20 +68,11 @@ export const SENSORY_CONSTANTS = {\r
 };\r
 \r
 // --- SOCIAL & NOBILITY CONSTANTS ---\r
-export const SOCIAL_CONSTANTS = {\r
-    NOBILITY_MATING_THRESHOLD: 10,\r
-    NOBILITY_AGE_THRESHOLD_DAYS: 1,\r
-    PROLIFIC_MATING_THRESHOLD: 5,\r
-    ELDER_AGE_MULTIPLIER: 2,\r
-};\r
-//Names are syllable count\r
-export const LINGUISTIC_CONSTANTS = {\r
-    NAME_INHERITANCE_CHANCE: 0.05,\r
-    FIRST_NAME_SYLLABLES_MIN: 1,\r
-    FIRST_NAME_SYLLABLES_RANGE: 1,\r
-    SURNAME_SYLLABLES_MIN: 2,\r
-    SURNAME_SYLLABLES_RANGE: 2,\r
-};\r
+// Compatibility re-exports: the canonical linguistic/social constants now live in\r
+// src/entities/Fauna/Language/Constants.ts.\r
+export const SOCIAL_CONSTANTS = LANGUAGE_SOCIAL_CONSTANTS;\r
+\r
+export const LINGUISTIC_CONSTANTS = LANGUAGE_LINGUISTIC_CONSTANTS;\r
 \r
 export const GENETIC_CONSTANTS = {\r
     MUTATION_STRENGTH: 0.12,\r
@@ -98,7 +91,7 @@ export const GENETIC_CONSTANTS = {\r
 // --- POPULATION & REPRODUCTION CONSTANTS ---\r
 export const POPULATION_CONSTANTS = {\r
     INITIAL_ORGANISMS: 20,\r
-    INITIAL_FLORA: 120,\r
+    INITIAL_FLORA: 90,\r
     BLOOM_COUNT_MIN: 10,\r
     BLOOM_COUNT_MAX: 20,\r
     // BIRTH_COST_BASE operates as the total systemic energy required to construct a new lifeform.\r
@@ -122,8 +115,8 @@ export const REPRODUCTION_CONSTANTS = {\r
 \r
 // --- DEFAULT GENETIC RANGES ---\r
 export const DEFAULT_TRAIT_RANGES: Record<TraitName, [number, number]> = {\r
-    speed: [1.8, 2.1],\r
-    size: [85, 95],\r
+    speed: [1.2, 1.5],\r
+    size: [75, 85],\r
     metabolism: [0.4, 0.5],\r
     sight_range: [15, 18],\r
     sight_fov: [(85 * Math.PI) / 180, (95 * Math.PI) / 180],\r
