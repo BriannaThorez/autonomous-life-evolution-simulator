@@ -26,8 +26,6 @@ export default function ChatAssistant({ simState }: ChatAssistantProps) {
 
   const { messages, isLoading, sendMessage } = useChat({
     systemInstruction: SIMULATION_SYSTEM_INSTRUCTION,
-    title: "Simulation Oracle",
-    welcomeMessage: "Ask me anything about the simulation logic.",
     simState
   });
 

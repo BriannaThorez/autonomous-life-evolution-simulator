@@ -1,3 +1,5 @@
+import { LINGUISTIC_CONSTANTS as LANGUAGE_LINGUISTIC_CONSTANTS, SOCIAL_CONSTANTS as LANGUAGE_SOCIAL_CONSTANTS } from '../entities/Fauna/Language/Constants';
+
 import { TraitName } from '../../types';
 
 // --- WORLD SPACE ---
@@ -66,20 +68,11 @@ export const SENSORY_CONSTANTS = {
 };
 
 // --- SOCIAL & NOBILITY CONSTANTS ---
-export const SOCIAL_CONSTANTS = {
-    NOBILITY_MATING_THRESHOLD: 10,
-    NOBILITY_AGE_THRESHOLD_DAYS: 1,
-    PROLIFIC_MATING_THRESHOLD: 5,
-    ELDER_AGE_MULTIPLIER: 2,
-};
+// Compatibility re-exports: the canonical linguistic/social constants now live in
+// src/entities/Fauna/Language/Constants.ts.
+export const SOCIAL_CONSTANTS = LANGUAGE_SOCIAL_CONSTANTS;
 
-export const LINGUISTIC_CONSTANTS = {
-    NAME_INHERITANCE_CHANCE: 0.05,
-    FIRST_NAME_SYLLABLES_MIN: 2,
-    FIRST_NAME_SYLLABLES_RANGE: 3,
-    SURNAME_SYLLABLES_MIN: 2,
-    SURNAME_SYLLABLES_RANGE: 4,
-};
+export const LINGUISTIC_CONSTANTS = LANGUAGE_LINGUISTIC_CONSTANTS;
 
 export const GENETIC_CONSTANTS = {
     MUTATION_STRENGTH: 0.12,

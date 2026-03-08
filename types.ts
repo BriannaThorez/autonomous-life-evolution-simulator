@@ -122,6 +122,7 @@ export interface SimulationState {
   events: SimEvent[];
   apexCandidates: OrganismData[];
   seed: number;
+  lastResetTime?: string;
   // UI-specific sampled data
   selectedEntity?: OrganismData | FloraData | null;
   hoveredEntity?: OrganismData | FloraData | null;

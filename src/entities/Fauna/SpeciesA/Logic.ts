@@ -1,7 +1,8 @@
 import { Fauna } from '../Base';
 import { Vector2, OrganismData, FloraData, SimulationState } from '../../../../types';
-import { SIM_CONSTANTS, SOCIAL_CONSTANTS } from '../../../core/Constants';
-import { LinguisticEngine } from '../LinguisticEngine';
+import { SIM_CONSTANTS } from '../../../core/Constants';
+import { SOCIAL_CONSTANTS } from '../Language/Constants';
+import { LinguisticEngine } from '../Language/LinguisticEngine';
 import { Brain } from '../Cognition/Brain';
 
 export class SpeciesALogic extends Fauna {

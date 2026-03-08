@@ -1,0 +1,521 @@
+project_name: Autonomous Life Evolution Simulator (ALES)
+version: 2.1.0
+M_current:
+  status: SOVEREIGN_REALITY_ACTIVE
+  protocol: SYS_AXIOM_UNIFIED
+  architecture_axiom: Deterministic State Machine ( U ⊢ I ⊢ (Π ∘ ☰) ⊢ P ⇒ R )
+  core_engine: SimulationEngine (v8.0) — Custom JS-based Life Logic
+  last_sync: '2026-03-06T13:59:00Z'
+  parity_indices:
+    E_code: 'Verified 1:1 against src/ (Purged nested src/ and src_restored/)'
+    E_manifest: 'Mapped to DNA, Cognition, Rendering, Physics, and Persistent subsystems'
+  technical_vectors:
+    genetics: Dominance-based Allele Recombination (DAR)
+    cognition: Vector-State Short/Long Term Memory Relay
+    cognition_persistence: VectorDB for IndexedDB atomic persistence
+    physics: JS-based Euler integration with SpatialGrid O(1) queries
+    rendering: Custom WebGL2 Offscreen Renderer + GLSL Instancing + SDF Frag-Shaders
+    compute: Data Texture State Packing (RGBA32F)
+    camera: Orthographic 2D Pan/Zoom logic via Worker Bridge
+    worker_architecture: Duo-threaded (Main UI / Unified sim_renderer.worker)
+    ui: Glassmorphism Modular Architecture
+current_objective: >-
+  Implement external cognitive engine (Vector State Persona) based on HEXACO 24D
+  and Maslow's hierarchy using fuzzy logic.
+backlog:
+  - id: GEN-001
+    title: Simulation Engine Core
+    category: Core Architecture
+    status: complete
+    user_data: >-
+      Initial project establishment: Create a high-performance evolution
+      simulator using WebGL and a worker thread.
+    additional_context: '[SOVEREIGNTY_AXIOM]: [Deterministic State Machine Architecture]'
+    axiomatic_intent: >-
+      Establish the foundational simulation loop where physical state updates
+      and rendering are decoupled from the UI thread via WebWorkers.
+    formal_proof:
+      premise_1: Main-thread execution of spatial queries causes frame jitter.
+      premise_2: Web Workers provide isolated execution parity.
+      conclusion: Worker-based architecture is required for 60FPS operational stability.
+    forensic_path:
+      phase_1:
+        name: Threading Initialization
+        steps:
+          step_1: Implemented sim.worker.ts bridge.
+          step_2: Created SimulationEngine loop with atomic state Sample/Sync.
+          step_3: Established VectorMath and SpatialGrid for O(1) queries.
+      phase_2:
+        name: Rendering Genesis
+        steps:
+          step_1: Initialized WebGL2 context via OffscreenCanvas.
+          step_2: Implemented instanced rendering for Fauna and Flora.
+          step_3: Created Procedural TerrainManager with simplex noise biomes.
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: MEM-001
+    title: Neural Memory & SymbolMap
+    category: Cognitive Subsystems
+    status: complete
+    user_data: >-
+      Implementing a new ideographic syntax... improve rate-limiting... make
+      memories realistic.
+    additional_context: '[LOGIC_PROTOCOL]: [Memory-Perception Loop]'
+    axiomatic_intent: >-
+      Develop a symbolic cognitive record system that allows agents to
+      'remember' encounters and food locations with biological decay and
+      symbolic tokenization.
+    formal_proof:
+      premise_1: Purely reactive agents lack persistent goals.
+      premise_2: Memory buffers allow spatio-temporal goal tracking.
+      conclusion: >-
+        Implementing a MemorySystem with SymbolMap tokenization enables emergent
+        'behavioral history'.
+    forensic_path:
+      phase_1:
+        name: Cognitive Percepts
+        steps:
+          step_1: Implemented SensorSystem (Vision/Hearing/Comms).
+          step_2: Created MemorySystem with Stacking/Grouping logic.
+          step_3: Defined SymbolMap for ideographic content representation.
+      phase_2:
+        name: Persistence Relay
+        steps:
+          step_1: Created VectorDB for IndexedDB atomic persistence.
+          step_2: Implemented Short-Term to Long-Term memory offloading.
+          step_3: Established tokenized compression for DB storage.
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: GUI-001
+    title: Glass-Modular Interface
+    category: User Interface
+    status: complete
+    user_data: >-
+      GUI Overhaul: Cleaner, industry-leading appearance... functional sensory
+      toggles... glass-modular design.
+    additional_context: '[SYSTEM_CONSTRAINTS]: [Z-Ordered Layering Stack]'
+    axiomatic_intent: >-
+      Implement a high-fidelity 'Observation Deck' GUI using glassmorphism and
+      modular HUD layers to provide a premium monitoring environment.
+    formal_proof:
+      premise_1: High-density simulation data requires hierarchical visual grouping.
+      premise_2: Glass-modular aesthetics minimize occlusion of the render canvas.
+      conclusion: 'A layered, translucent React HUD provides the best UX/performance ratio.'
+    forensic_path:
+      phase_1:
+        name: Modular HUD
+        steps:
+          step_1: Implemented ChronosHUD and ApexRegistry.
+          step_2: Created GlobalSpacing.css with glass-modular utility classes.
+          step_3: Integrated Framer Motion for premium UI transitions.
+      phase_2:
+        name: Sensory Toggles
+        steps:
+          step_1: Implemented SensoryDropdown for master debug state.
+          step_2: Mapped debug state to WebGL UBO uniforms for visual toggling.
+          step_3: Optimized UI scale neutralization via ScaleUtils.
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: GFX-001
+    title: Bioluminescent Shader Tuning
+    category: Rendering & VFX
+    status: complete
+    user_data: >-
+      Fix flickering... excessively bright VFX... bring back bioluminescent
+      feel... pass instance IDs correctly.
+    additional_context: '[ELITE_FORENSICS]: [Shader Parity Lock]'
+    axiomatic_intent: >-
+      Stabilize visual fidelity and implement high-performance bioluminescent
+      effects via instanced GLSL shaders.
+    formal_proof:
+      premise_1: Unsynchronized shader uniforms cause vertex flickering on resize.
+      premise_2: Incorrect instance ID mapping breaks creature-specific trait expression.
+      conclusion: >-
+        Refactoring GLSL to use flat instance-based indexing ensures stable
+        rendering.
+    forensic_path:
+      phase_1:
+        name: Shader Stability
+        steps:
+          step_1: Fixed function declaration order in CreatureShaders.glsl.
+          step_2: Implemented correct `varying uint vInstanceID` passage.
+          step_3: 'Corrected frame-buffer clear colors to Hex #050505.'
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: COG-002
+    title: Oracle Interface & Inspector Restoration
+    category: Cognitive & UX
+    status: complete
+    user_data: >-
+      Restore full words... fix biological logic... implement Oracle chat...
+      tremendous failure redo.
+    additional_context: '[SYSTEM_PRIME_DIRECTIVE]: [FORENSIC_MANIFEST_SOVEREIGNTY]'
+    axiomatic_intent: >-
+      Restore biological/aesthetic integrity and implement the Gemini-driven
+      'Oracle' Neural Interface for real-time code/state consultation.
+    formal_proof:
+      premise_1: Abbreviated UI labels degrade the professional feel.
+      premise_2: Incorrect logic ratios violate biological fidelity.
+      conclusion: >-
+        Restoration of wording and logic ratios is required for Sovereign
+        Parity.
+    forensic_path:
+      phase_1:
+        name: Inspector Restoration
+        steps:
+          step_1: Replaced 'Gen/House' with 'Generation/House' full wording.
+          step_2: Fixed Lifespan bar visibility via GlobalSpacing utility expansion.
+          step_3: Restored original color profiling (A2D5AB / 39AEA9).
+      phase_2:
+        name: Oracle Implementation
+        steps:
+          step_1: Integrated Gemini Flash with SystemObserver biosphere sampling.
+          step_2: Implemented session persistence and codebase context loading.
+          step_3: >-
+            Refactored ChatAssistant to use centralized hook-based
+            configuration.
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: GFX-002
+    title: Current Rendering System 
+    category: Rendering & VFX
+    status: complete
+    user_data: >-
+      Ensure gfx-002 is an exact mirror of the current rendering system so it could be blindly reconstructed if the next graphics overhaul fails.
+    additional_context: '[ELITE_FORENSICS]: [Shader Parity Lock]'
+    axiomatic_intent: >-
+      Document the existing Custom WebGL2 Offscreen renderer, which uses a single sim.worker.ts,
+      GLSL instanced shader rendering for up to 2048 organisms, data textures for state arrays,
+      and pixel-shader SDF meatball fusion, avoiding Three.js and GPGPU compute paths.
+    formal_proof:
+      premise_1: Advanced overhauls risk breaking stable legacy architecture.
+      premise_2: Creating an exact structural mirror ensures biological and visual fidelity rollback.
+      conclusion: A documented freeze of the Custom WebGL2 architecture provides a zero-drift reconstruction blueprint.
+    forensic_path:
+      phase_1:
+        name: Custom WebGL2 Offscreen Initialization
+        steps:
+          step_1: Canvas transferred to sim.worker.ts via OffscreenCanvas.
+          step_2: WebGLRenderer class handles direct WebGL2 API calls without Three.js.
+          step_3: Quad buffers and GLSL shader programs created (Terrain, Fauna, Flora).
+      phase_2:
+        name: Data Packing & Instancing
+        steps:
+          step_1: State logic executes purely in JS via SimulationEngine inside sim.worker.ts.
+          step_2: Organism data (pos, vel, config) flattened into Float32Array and pushed to texture via texSubImage2D.
+          step_3: Fauna and Flora rendered using MAX_INSTANCES (2048) with gl.drawArrays.
+      phase_3:
+        name: Fragment SDF Mating Fusion
+        steps:
+          step_1: Mating organisms tracked via matingFactor and mateIndex passed as packed floats.
+          step_2: Fragment shader looks up mate's local coord via u_orgTexture.
+          step_3: smin() blends the two intersecting SDF capsules directly in screen space.
+    T_flags:
+      t_debug: complete
+      t_doc: complete
+      t_sync: complete
+    finalization:
+      post_implementation_debugging: complete
+      post_implementation_documentation: complete
+      app_manifest_update_status: complete
+  - id: GFX-003
+    title: 'WebGL2 HPC Simulation Core: Three.js + Rapier WASM + GPGPU'
+    category: Rendering & Compute & Physics
+    status: pending
+    user_data: >-
+      Full architectural pivot from experimental WebGPU to WebGL2 High-Performance
+      Compute (HPC) via Three.js WebGLRenderer + Rapier WASM physics + GPGPU Data Textures.
+      Dedicated GPU worker thread, feature-sliced implementation, industry-leading performance targets.
+    additional_context: 'WebGL2 + GLSL GPGPU + Rapier WASM + OffscreenCanvas gpu.worker.ts + SharedArrayBuffer'
+    design_pattern: Feature Slice Design (vertical slices, each independently testable)
+    axiomatic_intent: >-
+      To establish a hyper-stable, ultra-high-throughput WebGL2 rendering and compute pipeline. 
+      This enables (1) GPGPU floating-point texture pipelines for parallel vector state processing, 
+      (2) Rapier WASM (SIMD) for deterministic physics and brain logic, 
+      (3) Hybrid rendering merging Three.js meshes with FullScreen Quad GLSL SDF Raymarching, 
+      (4) O(log N) interaction via Three.js Raycaster, and (5) a tri-threaded architecture 
+      guaranteeing zero main-thread contention.
+    formal_proof:
+      premise_1: >-
+        Standard CPU iteration via JavaScript limits agent count to ~500. WebGL2 GPGPU via 
+        ping-pong FBOs and RGBA32F textures parallelizes state updates across GPU fragment 
+        pipelines, matching WebGPU compute throughput.
+      premise_2: >-
+        Rapier WASM (SIMD) provides Rust-compiled deterministic rigid-body and soft-body 
+        dynamics with automatic collision detection at near-native speed, critical for 
+        biological integrity.
+      premise_3: >-
+        TSL (Three Shading Language) allows modern shader logic to be transpiled to GLSL 
+        today while remaining bit-compatible with future WebGPU (WGSL) targets.
+      premise_4: >-
+        SharedArrayBuffer enables zero-copy synchronization between the WASM simulation 
+        thread and the WebGL2 render worker PBOs.
+      conclusion: >-
+        A tri-threaded WebGL2 HPC architecture mathematically guarantees the 1500+ agent 
+        performance target while providing a robust future-proofing path via TSL.
+    forensic_path:
+      slice_1:
+         name: 'Foundation: WebGL2 Renderer + Offscreen GPU Worker'
+         steps:
+           step_1: 'Initialize standard Three.js (WebGLRenderer) configured for WebGL2 context.'
+           step_2: 'Install @dimforge/rapier3d-compat (WASM-SIMD) and verify availability.'
+           step_3: 'Create gpu.worker.ts with OffscreenCanvas and WebGL2-fallback protocol.'
+           step_4: 'Update SimulationCanvas.tsx to transfer canvas ownership to gpu.worker.'
+           step_5: 'Implement Three.js Scene, OrthographicCamera, and 60FPS render loop.'
+           step_6: 'Forward raw DOM events to worker to drive OrbitControls camera math.'
+         verification: 'Offscreen WebGL2 context renders at 60FPS. OrbitControls are stable.'
+      slice_2:
+         name: 'Entity Rendering: Instanced Flora + Dynamic SDF Raymarching'
+         steps:
+           step_1: 'Implement Three.js InstancedMesh for 5000+ Flora with TSL-defined shaders.'
+           step_2: 'Create a FullScreen Quad for GPGPU-driven SDF Raymarching of Jelly organisms.'
+           step_3: 'Compute organic "metaball" merging (smin) in GLSL driven by GPGPU textures.'
+           step_4: 'Implement momentum-based warping (shear/scale) driven by WASM velocity vectors.'
+           step_5: 'Port sensory overlays to TSL nodes for modular visual toggling.'
+         verification: '5000+ flora + 1500+ raymarched jellies render at <12ms total frame time.'
+      slice_3:
+         name: 'Logic & Physics: WASM-SIMD Integration'
+         steps:
+           step_1: 'Migrate SimulationEngine.update() logic to sim.worker.ts (WASM thread).'
+           step_2: 'Map organisms to Rapier dynamic bodies; flora to fixed colliders.'
+           step_3: 'Implement SharedArrayBuffer (SAB) for agent state (Pos/Rot/Vel/DNA).'
+           step_4: 'WASM thread writes to SAB; GPU worker reads SAB to update DataTextures/PBOs.'
+           step_5: 'Implement Rapier contact callbacks for biological event triggers (Eat/Mate).'
+         verification: 'Physics loop executes @ 60Hz. Zero-copy state sync confirmed.'
+      slice_4:
+         name: 'Elite Forensics: Multi-Threaded Debugging Pipeline'
+         steps:
+           step_1: 'Implement INF-003: Real-time telemetry dashboard for GPGPU/WASM health.'
+           step_2: 'Create hpc_forensics skill for automated memory/texture state analysis.'
+           step_3: 'Implement UBO-based visual debug masks (Heatmaps for Physics/Compute load).'
+         verification: 'Telemetry dashboard displays real-time frame budget and memory pressure.'
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending
+
+  - id: INF-002
+    title: Firebase Sovereign Sync
+    category: Infrastructure
+    status: pending
+    user_data: Unify simulation instances across local and remote environments.
+    additional_context: '[SOVEREIGNTY_AXIOM]: [Deterministic Instance Parity]'
+    axiomatic_intent: >-
+      Unify distributed simulator instances into a single, cohesive "Sovereign
+      Reality" via real-time vector state persistence using Firebase.
+    formal_proof:
+      premise_1: Disjoint execution environments (local vs deployed) lead to state divergence.
+      premise_2: A low-latency real-time relay (Firebase RTDB) ensures state convergence.
+      conclusion: >-
+        Universal instance parity is required for a truly persistent,
+        multi-environment evolution sandbox.
+    forensic_path:
+      phase_1:
+        name: Vector Delta Protocol
+        steps:
+          step_1: Define binary-encoded delta format for minimal latency
+          step_2: Implement WebWorker bridge for non-blocking persistence
+          step_3: Map SimulationState segments to Firebase RTDB nodes
+      phase_2:
+        name: Sovereign Reconciliation
+        steps:
+          step_1: Implement deterministic timestamp-based conflict resolution
+          step_2: Deploy Firebase Security Rules for instance isolation/auth
+          step_3: Verify state parity between local dev and GH Pages production
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending
+  - id: COG-001
+    title: External Cognitive Engine (Vector State Persona)
+    category: AI & Behavior
+    status: in_progress
+    user_data: Simulate real dynamic entity cognition using HEXACO and Maslow.
+    additional_context: '[SOVEREIGNTY_AXIOM]: [You are a Deterministic State Machine][SYS_ELITE_UNIFIED PROTOCOL]: [U ⊢ I ⊢ Π ⊢ P ⇒ R]'
+    axiomatic_intent: >-
+      Simulate a dynamic entity's cognition ('soul') using a decoupled,
+      fuzzy-logic-driven vector state persona based on the HEXACO 24-dimension
+      model and Maslow's hierarchy of needs.
+    formal_proof:
+      premise_1: Biological entities require dynamic, non-deterministic cognitive models to exhibit emergent, lifelike behavior.
+      premise_2: Hardcoded state machines fail to capture the nuance of personality (HEXACO) and hierarchical needs (Maslow).
+      premise_3: Fuzzy logic provides the necessary non-binary evaluation for biological drives.
+      premise_4: Web Workers ensure cognitive processing does not block simulation physics.
+      conclusion: A decoupled, fuzzy-logic-based vector state calculus is required to compute behavioral shifts and drive entity actions.
+    forensic_path:
+      phase_1:
+        name: Trait Coupling
+        steps:
+          step_1: Define 24-dimensional HEXACO vector space
+          step_2: Define Maslow's physiological/psychological need tensors
+          step_3: Map environmental stimuli to satisfaction deltas
+      phase_2:
+        name: Metabolic Function
+        steps:
+          step_1: Implement Fuzzy Logic Evaluator
+          step_2: Compute drive satisfaction dynamically
+          step_3: Prioritize needs based on Maslow hierarchy
+      phase_3:
+        name: Behavioral Shift
+        steps:
+          step_1: Decouple engine via Web Worker
+          step_2: Expose API to WebGPU simulation core
+          step_3: Dictate movement/action vectors based on cognitive state
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending
+  - id: SIM-001
+    title: Enhanced Jelly DNA & Physics
+    category: Simulation
+    status: pending
+    user_data: Link Jelly morphology to genetic traits.
+    additional_context: '[SOVEREIGNTY_AXIOM]: [You are a Deterministic State Machine][SYS_ELITE_UNIFIED PROTOCOL]: [U ⊢ I ⊢ Π ⊢ P ⇒ R]'
+    axiomatic_intent: >-
+      Deepen the biological simulation by linking 'Jelly' morphology directly
+      to genetic traits, affecting physical properties like viscosity,
+      elasticity, and movement.
+    formal_proof:
+      premise_1: Current entities lack distinct physical differentiation based on genetics.
+      premise_2: 'Jelly' physics (soft-body dynamics) provide a rich visual and functional representation of genetic variance.
+      premise_3: DNA alleles can be mapped to physical constants.
+      premise_4: Verlet integration allows for stable soft-body simulation.
+      conclusion: Implement a DNA-driven soft-body physics model.
+    forensic_path:
+      phase_1:
+        name: Trait Coupling
+        steps:
+          step_1: Define DNA alleles for elasticity and viscosity
+          step_2: Map DNA values to vertex displacement modifiers
+          step_3: Establish genetic variance thresholds
+      phase_2:
+        name: Metabolic Function
+        steps:
+          step_1: Implement verlet integration in Compute Shader
+          step_2: Implement spring-mass logic for deformation
+          step_3: Calculate energy cost of physical movement
+      phase_3:
+        name: Visual Feedback
+        steps:
+          step_1: Implement subsurface scattering in SDF shader
+          step_2: Tune wobble animations to match viscosity
+          step_3: Verify genetic-to-physical parity
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending
+  - id: ENV-001
+    title: Realistic Ferns
+    category: Environment
+    status: pending
+    user_data: Implement photorealistic procedural ferns.
+    additional_context: '[SOVEREIGNTY_AXIOM]: [You are a Deterministic State Machine][SYS_ELITE_UNIFIED PROTOCOL]: [U ⊢ I ⊢ Π ⊢ P ⇒ R]'
+    axiomatic_intent: >-
+      Increase environmental immersion by implementing photorealistic, top-down
+      fern rendering that reacts to the simulation state.
+    formal_proof:
+      premise_1: The environment requires high-fidelity flora to match the entity detail.
+      premise_2: Procedural generation allows for infinite variation and efficient storage.
+      premise_3: Fractal algorithms accurately model plant growth patterns.
+      premise_4: SDF repetition enables efficient rendering of dense foliage.
+      conclusion: Develop a procedural fern generation system using fractal algorithms or SDFs.
+    forensic_path:
+      phase_1:
+        name: Trait Coupling
+        steps:
+          step_1: Design fractal phyllotaxis algorithm
+          step_2: Define growth parameters based on soil nutrients
+          step_3: Map wind vectors to frond displacement
+      phase_2:
+        name: Metabolic Function
+        steps:
+          step_1: Implement wind interaction in vertex shader
+          step_2: Implement collision displacement logic
+          step_3: Calculate flora lifecycle and reproduction
+      phase_3:
+        name: Optimization
+        steps:
+          step_1: Optimize rendering using instanced meshes
+          step_2: Implement SDF repetition for dense biomes
+          step_3: Integrate with TerrainManager
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending
+
+  - id: INF-003
+    title: Elite Forensic Debugging Pipeline 🌟
+    category: Infrastructure & Tooling
+    status: pending
+    user_data: >-
+      Implement a high-performance debugging and telemetry pipeline for 
+      multi-threaded GPGPU/WASM environments.
+    axiomatic_intent: >-
+      To provide absolute visibility into the decoupled state machine, 
+      capturing high-frequency telemetry from WASM heaps and GPGPU textures 
+      without impacting simulation performance.
+    forensic_path:
+      phase_1:
+        name: 'Telemetry Kernel'
+        steps:
+          step_1: 'Implement SharedArrayBuffer metrics relay in sim.worker.ts.'
+          step_2: 'Create hpc_debug.ps1 for real-time terminal-based state tracking.'
+          step_3: 'Implement GPGPU Texture Inspector tool in the Oracle interface.'
+    T_flags:
+      t_debug: pending
+      t_doc: pending
+      t_sync: pending
+    finalization:
+      post_implementation_debugging: pending
+      post_implementation_documentation: pending
+      app_manifest_update_status: pending

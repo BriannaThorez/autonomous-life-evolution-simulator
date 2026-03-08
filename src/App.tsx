@@ -70,8 +70,10 @@ const App: React.FC<AppProps> = ({ savedState }) => {
     const [apexExpanded, setApexExpanded] = useState(() => {
         return VectorDB.getSetting('apex_expanded', true);
     });
-    const [apexSort, setApexSort] = useState<'LINEAGE' | 'ENERGY' | 'AGE'>('LINEAGE');
+    const [apexSort, setApexSort] = useState<'LINEAGE' | 'ENERGY' | 'AGE'>('AGE');
     const [inspectorPos, setInspectorPos] = useState<Vector2>({ x: window.innerWidth - 300, y: 100 });
+    const [logPanelPos, setLogPanelPos] = useState<Vector2>({ x: 16, y: window.innerHeight - 250 });
+    const [logExpanded, setLogExpanded] = useState(true);
     const [showVision, setShowVision] = useState(() => {
         return VectorDB.getSetting('debug_vision', true);
     });
@@ -176,7 +178,6 @@ const App: React.FC<AppProps> = ({ savedState }) => {
 
     return (
         <div className="relative w-full h-screen select-none overflow-hidden" style={{ background: '#050505', color: '#e2e8f0' }}>
-            <ChatAssistant simState={simState} />
             {worker && (
                 <SimulationCanvas
                     worker={worker}
@@ -205,16 +206,16 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                 }}
             >
 
-                <div className="absolute flex flex-col items-end gap-3" style={{ top: '1rem', right: '1rem' }}>
-                    <div className="flex gap-3 pointer-events-auto items-stretch h-12">
+                <div className="absolute" style={{ top: 'var(--fluid-space-sm)', right: 'var(--fluid-space-sm)' }}>
+                    <div className="hud-shell hud-command-cluster pointer-events-auto" style={{ gap: '0.42rem', padding: '0.34rem', borderRadius: '0.7rem' }}>
                         <Tooltip title="Neural Registry" content="Browse the full historical record of every entity that has existed in the simulation." position="left">
                             <button
                                 onClick={() => setShowVectorDB(true)}
-                                className="glass-modular px-5 rounded flex items-center gap-3 transition-all h-full"
-                                style={{ border: '1px solid rgba(57, 174, 169, 0.3)' }}
+                                className="hud-shell-strong rounded flex items-center gap-2 transition-all h-full juice-interactive"
+                                style={{ border: '1px solid rgba(57, 174, 169, 0.3)', padding: '0.52rem 0.78rem', borderRadius: '0.56rem' }}
                             >
                                 <div className="rounded-full shadow-glow" style={{ width: '8px', height: '8px', background: '#39AEA9' }} />
-                                <span className="text-[0.75rem] font-black tracking-[0.2em] litho-text uppercase">Registry</span>
+                                <span className="text-[0.75rem] font-black tracking-[0.16em] litho-text uppercase">Registry</span>
                             </button>
                         </Tooltip>
 
@@ -236,8 +237,8 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                         <Tooltip title="Engine Settings" content="Configure visual scaling, simulation speed, and master reset parameters." position="left">
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="glass-modular px-4 rounded flex items-center justify-center transition-all h-full"
-                                style={{ border: '1px solid rgba(162, 213, 171, 0.2)' }}
+                                className="hud-shell rounded flex items-center justify-center transition-all h-full juice-interactive"
+                                style={{ border: '1px solid rgba(162, 213, 171, 0.2)', padding: '0.52rem 0.72rem', borderRadius: '0.56rem' }}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A2D5AB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
                             </button>
@@ -246,7 +247,7 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                 </div>
 
                 {/* Top-Left HUD & Registry */}
-                <div className="absolute flex flex-row fluid-gap-xs items-start" style={{ top: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)' }}>
+                <div className="absolute flex flex-row items-start" style={{ top: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)', gap: '0.32rem' }}>
                     <ChronosHUD
                         simState={simState}
                         onOpenRegistry={() => setShowVectorDB(true)}
@@ -308,40 +309,40 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                     onCancel={() => setResetConfirm(false)}
                 />
 
-                {/* Bottom Notification Panel */}
-                <div className="absolute pointer-events-auto" style={{ bottom: 'var(--fluid-space-sm)', left: 'var(--fluid-space-sm)' }}>
-                    <NotificationPanel
-                        events={simState.events}
-                        onFocus={(pos, entityId) => {
-                            setTargetFocus(pos);
-                            if (entityId) setSelectedId(entityId);
-                        }}
-                    />
-                </div>
-
-                {/* Control Bar */}
-                <div
-                    className="absolute glass-modular flex items-center fluid-gap-md fluid-px-lg fluid-py-sm fluid-rounded-md pointer-events-auto"
-                    style={{
-                        bottom: 'var(--fluid-space-sm)', left: '50%', transform: 'translateX(-50%)',
-                        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)'
+                <NotificationPanel
+                    events={simState.events}
+                    expanded={logExpanded}
+                    onToggleExpanded={() => setLogExpanded(prev => !prev)}
+                    position={logPanelPos}
+                    onPositionChange={setLogPanelPos}
+                    onFocus={(pos, entityId) => {
+                        setTargetFocus(pos);
+                        if (entityId) setSelectedId(entityId);
                     }}
-                >
-                    <button
-                        onClick={() => setIsPaused(!isPaused)}
-                        className="transition-all juice-interactive"
-                        style={{ color: '#A2D5AB', border: 'none', background: 'none', cursor: 'pointer' }}
-                    >
-                        {isPaused ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                />
+
+                {/* Bottom Control Bar */}
+                <div className="absolute pointer-events-none" style={{ bottom: 'var(--fluid-space-sm)', right: 'var(--fluid-space-sm)' }}>
+                    <div className="hud-shell hud-control-bar fluid-rounded-lg pointer-events-auto ml-auto" style={{ gap: '0.55rem', padding: '0.44rem 0.72rem', minHeight: '2.45rem' }}>
+                        <button
+                            onClick={() => setIsPaused(!isPaused)}
+                            className="transition-all juice-interactive"
+                            style={{ color: '#A2D5AB', border: 'none', background: 'none', cursor: 'pointer' }}
+                        >
+                            {isPaused ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                            )}
+                        </button>
+                        <div className="hud-metric-pill text-[var(--text-xs)] litho-text font-black" style={{ color: '#39AEA9', opacity: 0.78, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.08em' }}>
+                            VDB: {VectorDB.saveCount} saves | {VectorDB.lastSaveOrgCount} orgs | {VectorDB.lastSaveMs.toFixed(0)}ms
+                        </div>
+                        {simState.lastResetTime && (
+                            <div className="hud-metric-pill text-[var(--text-xs)] litho-text font-black" style={{ color: '#A2D5AB', opacity: 0.72, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.06em' }}>
+                                RESET: {simState.lastResetTime}
+                            </div>
                         )}
-                    </button>
-                    <div className="text-[var(--text-xs)] italic litho-text font-black uppercase" style={{ color: '#A2D5AB', opacity: 0.3, letterSpacing: '0.3em' }}>Chronos Engine v6.1</div>
-                    {/* VectorDB Status Indicator */}
-                    <div className="text-[var(--text-xs)] litho-text font-black" style={{ color: '#39AEA9', opacity: 0.4, fontFamily: 'monospace', fontSize: '0.5rem', letterSpacing: '0.1em' }}>
-                        VDB: {VectorDB.saveCount} saves • {VectorDB.lastSaveOrgCount} orgs • {VectorDB.lastSaveMs.toFixed(0)}ms
                     </div>
                 </div>
 
@@ -359,6 +360,11 @@ const App: React.FC<AppProps> = ({ savedState }) => {
                     />
                 )}
             </div>
+
+            {/* Chat Assistant — rendered after GUI layer to ensure correct z-order */}
+            <ChatAssistant simState={simState} />
+
+
         </div>
     );
 };

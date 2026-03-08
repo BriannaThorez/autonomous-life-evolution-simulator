@@ -24,6 +24,8 @@ dist-ssr
 
 
 # Custom
+.env.local
+.env
 autonomous-life-evolution-simulator_Blueprint.json
 ALES_Blueprint.json
 tsc_*

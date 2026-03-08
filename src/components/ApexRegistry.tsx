@@ -14,32 +14,45 @@ interface Props {
 }
 
 const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus, expanded, onToggle, sort, onSortChange }) => {
+    const formatAgeMetric = (ageFrames: number) => {
+        const daysPerYear = 15 * 4;
+        const totalDays = Math.floor(ageFrames / (60 * 24));
+        const years = Math.floor(totalDays / daysPerYear);
+        const days = totalDays % daysPerYear;
+        const hours = Math.floor((ageFrames % (60 * 24)) / 60);
+        return `${hours}Hr ${days}D ${years}Y`;
+    };
+
     return (
         <Tooltip title="Apex Protocols" content="Real-time monitoring of the most successful biological entities based on lineage, energy efficiency, and survival duration." position="right">
             <div
-                className="glass-modular fluid-p-sm fluid-rounded flex flex-col pointer-events-auto transition-all"
+                className="hud-shell fluid-rounded-lg flex flex-col pointer-events-auto transition-all overflow-hidden"
                 style={{
-                    minWidth: '20rem',
-                    width: 'fit-content',
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
-                    border: '1px solid rgba(162, 213, 171, 0.1)'
+                    minWidth: '13.6rem',
+                    width: '13.6rem',
+                    padding: '0.28rem'
                 }}
                 onWheel={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div
-                    className="flex items-center justify-between group select-none cursor-pointer"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--fluid-space-sm)' }}
+                    className="hud-header-strip -m-[0.28rem] mb-0 px-[0.34rem] py-[0.14rem] flex items-center justify-between group select-none cursor-pointer"
                     onClick={onToggle}
                 >
-                    <div className="flex flex-col">
-                        <h4 className="text-[var(--text-sm)] font-black litho-text uppercase transition-all group-hover-text-accent" style={{ letterSpacing: '0.2em', color: '#E5EFC1' }}>
-                            Apex Registry
-                        </h4>
-                        <span className="opacity-40 uppercase font-bold" style={{ fontSize: '0.55rem', color: '#A2D5AB', letterSpacing: '0.15em' }}>
-                            Tracking Top 5 Entities
-                        </span>
-                    </div>
+                    <h4
+                        className="font-black litho-text uppercase transition-all group-hover-text-accent"
+                        style={{
+                            minWidth: 0,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.12em',
+                            color: '#E5EFC1',
+                            lineHeight: 0.92,
+                            margin: 0,
+                            padding: 0
+                        }}
+                    >
+                        Leaderboard
+                    </h4>
 
                     <div className="transition-all opacity-40" style={{ color: '#39AEA9' }}>
                         <div className="group-hover-visible" style={{ opacity: 0.4 }}>
@@ -53,18 +66,18 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                 </div>
 
                 {expanded && (
-                    <div className="animate-fade-in" style={{ paddingTop: '0.5rem' }}>
+                    <div className="animate-fade-in" style={{ paddingTop: '0.18rem' }}>
                         {/* Sort Control */}
-                        <div className="flex items-center justify-between" style={{ marginBottom: '0.5rem' }}>
-                            <span className="opacity-40 uppercase font-black" style={{ fontSize: '0.6rem', color: '#A2D5AB', letterSpacing: '0.1em' }}>Sort Protocol</span>
+                        <div className="flex items-center justify-between" style={{ marginBottom: '0.18rem' }}>
+                            <span className="opacity-40 uppercase font-black" style={{ fontSize: '0.48rem', color: '#A2D5AB', letterSpacing: '0.08em', lineHeight: 1 }}>Sort Protocol</span>
                             <div className="relative group">
                                 <button
                                     className="fluid-px-sm fluid-rounded transition-all flex items-center juice-interactive"
                                     style={{
-                                        fontSize: '0.6rem', fontWeight: 900, color: '#39AEA9',
+                                        fontSize: '0.5rem', fontWeight: 900, color: '#39AEA9',
                                         textTransform: 'uppercase', letterSpacing: '0.1em',
                                         border: '1px solid rgba(57, 174, 169, 0.27)', background: 'rgba(0,0,0,0.2)',
-                                        paddingTop: '4px', paddingBottom: '4px', gap: '4px'
+                                        paddingTop: '3px', paddingBottom: '3px', gap: '3px'
                                     }}
                                 >
                                     {sort} <span style={{ fontSize: '0.5rem', opacity: 0.5 }}>▼</span>
@@ -74,9 +87,9 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                                 <div
                                     className="absolute transition-all group-hover-visible shadow-glow"
                                     style={{
-                                        top: '100%', right: 0, marginTop: '4px', width: '12rem',
+                                        top: '100%', right: 0, marginTop: '4px', width: '10rem',
                                         background: 'rgba(0,0,0,0.95)', border: '1px solid rgba(57, 174, 169, 0.27)',
-                                        borderRadius: 'var(--fluid-radius)', zIndex: 100, padding: '4px',
+                                        borderRadius: 'var(--fluid-radius)', zIndex: 100, padding: '3px',
                                         backdropFilter: 'blur(32px) saturate(200%)', visibility: 'hidden', opacity: 0
                                     }}
                                 >
@@ -90,7 +103,7 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                                             onClick={() => onSortChange(s.id as any)}
                                             className="w-full text-left fluid-px-md fluid-py-xs fluid-rounded transition-all uppercase"
                                             style={{
-                                                fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.1em',
+                                                fontSize: '0.52rem', fontWeight: 900, letterSpacing: '0.1em',
                                                 marginBottom: '2px', border: 'none', cursor: 'pointer',
                                                 background: sort === s.id ? 'rgba(57, 174, 169, 0.13)' : 'transparent',
                                                 color: sort === s.id ? '#39AEA9' : '#A2D5AB',
@@ -105,7 +118,7 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                         </div>
 
                         {/* List */}
-                        <div className="flex flex-col fluid-gap-xs">
+                        <div className="flex flex-col" style={{ gap: '0.12rem' }}>
                             {(simState.apexCandidates || [])
                                 .slice()
                                 .sort((a, b) => {
@@ -117,11 +130,13 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                                 .map((org, i) => (
                                     <div
                                         key={org.id}
-                                        className="flex items-center justify-between fluid-p-xs fluid-px-sm fluid-rounded transition-all cursor-pointer group"
+                                        className="flex items-center justify-between fluid-px-sm fluid-rounded transition-all cursor-pointer group"
                                         style={{
-                                            background: selectedId === org.id ? 'rgba(57, 174, 169, 0.07)' : 'rgba(255,255,255,0.01)',
+                                            background: selectedId === org.id ? 'rgba(57, 174, 169, 0.08)' : 'rgba(255,255,255,0.015)',
                                             border: selectedId === org.id ? '1px solid rgba(57, 174, 169, 0.27)' : '1px solid rgba(255,255,255,0.03)',
-                                            boxShadow: selectedId === org.id ? '0 0 15px rgba(57,174,169,0.1)' : 'none'
+                                            boxShadow: selectedId === org.id ? '0 0 12px rgba(57,174,169,0.08)' : 'none',
+                                            paddingTop: '0.16rem',
+                                            paddingBottom: '0.16rem'
                                         }}
                                         onClick={(e) => { e.stopPropagation(); onSelect(org.id); }}
                                         onDoubleClick={(e) => { e.stopPropagation(); onFocus?.(org.id); }}
@@ -146,8 +161,8 @@ const ApexRegistry: React.FC<Props> = ({ simState, selectedId, onSelect, onFocus
                                             </span>
                                         </div>
 
-                                        <span style={{ fontSize: '0.6rem', fontFamily: 'monospace', fontWeight: 900, color: '#A2D5AB', opacity: 0.4, marginLeft: '0.5rem', whiteSpace: 'nowrap' }}>
-                                            {sort === 'LINEAGE' ? `GEN ${org.generation}` : sort === 'AGE' ? `${(org.age / 60).toFixed(0)} HR` : `${org.energy.toFixed(0)} NRG`}
+                                        <span style={{ fontSize: '0.52rem', fontFamily: 'monospace', fontWeight: 900, color: '#A2D5AB', opacity: 0.55, marginLeft: '0.35rem', whiteSpace: 'nowrap' }}>
+                                            {sort === 'LINEAGE' ? `GEN ${org.generation}` : sort === 'AGE' ? formatAgeMetric(org.age) : `${org.energy.toFixed(0)} NRG`}
                                         </span>
                                     </div>
                                 ))}

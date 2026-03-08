@@ -2,7 +2,6 @@ import { Vector2, OrganismData, EntityStats, Genome, Memory } from '../../../typ
 import { VectorMath } from '../../core/VectorMath';
 import { Metabolism } from './Metabolism';
 import { Genetics } from '../../evolution/GeneticsEngine';
-import { LinguisticEngine } from './LinguisticEngine';
 import { UNIT_UTILS } from '../../core/Constants';
 
 export class Fauna {

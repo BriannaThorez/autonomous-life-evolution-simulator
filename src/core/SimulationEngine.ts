@@ -3,7 +3,7 @@ import { VectorMath } from './VectorMath';
 import { Genetics as GeneticsEngine } from '../evolution/GeneticsEngine';
 import { Metabolism } from '../entities/Fauna/Metabolism';
 import { VectorDB } from '../data/VectorDB';
-import { LinguisticEngine } from '../entities/Fauna/LinguisticEngine';
+import { LinguisticEngine } from '../entities/Fauna/Language/LinguisticEngine';
 import { SpatialGrid } from './SpatialGrid';
 import { TerrainManager } from './TerrainManager';
 import { SIM_CONSTANTS, UNIT_UTILS, WORLD_CONSTANTS, POPULATION_CONSTANTS, CHRONOS_UTILS, DEFAULT_TRAIT_RANGES } from './Constants';
@@ -146,7 +146,8 @@ export class SimulationEngine {
       config: this.config,
       events: [],
       apexCandidates: [],
-      seed: Math.random()
+      seed: Math.random(),
+      lastResetTime: new Date().toISOString()
     };
     this.lastId = 0;
     this.terrain = new TerrainManager(this.state.worldSize.x, this.state.worldSize.y);
@@ -167,6 +168,10 @@ export class SimulationEngine {
       : GeneticsEngine.createRandomGenome(this.state.config));
 
     const expressedStats = GeneticsEngine.express(genome);
+    // Active fauna identity path: IDs come from SimulationEngine.lastId, and names use the simple
+    // LinguisticEngine piecewise path below. We intentionally do NOT use
+    // LinguisticEngine.constructFullLinguisticProfile() here because the current simulation should not
+    // inherit first names, add Roman numeral suffixes, or auto-assign noble/house lineage metadata at birth.
     const firstName = LinguisticEngine.generateFirstName();
     const finalSurname = parentA ? (parentB ? (Math.random() > 0.5 ? parentA.surname : parentB.surname) : parentA.surname) : LinguisticEngine.generateSurname();
 

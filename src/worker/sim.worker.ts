@@ -7,6 +7,7 @@ let engine: SimulationEngine | null = null;
 let renderer: WebGLRenderer | null = null;
 let lastTime = 0;
 let isPaused = false;
+let extinctionFrameCount = 0;
 let cameraParams = {
     cameraOffset: [0, 0] as [number, number],
     zoom: 1,
@@ -108,6 +109,34 @@ function tick(time: number) {
     if (!isPaused) {
         engine.update();
 
+        // --- Extinction Safety Check ---
+        if (engine.state.organisms.length === 0) {
+            extinctionFrameCount++;
+            if (extinctionFrameCount >= 300) {
+                console.warn('[Worker] Extinction detected — all organisms dead. Auto-resetting simulation.');
+                engine.hardReset();
+                renderer.updateTerrainTexture(engine.terrain, engine.state.worldSize);
+                extinctionFrameCount = 0;
+                self.postMessage({
+                    type: 'STATE_REFRESH',
+                    data: {
+                        time: engine.state.time,
+                        day: engine.state.day,
+                        hour: engine.state.hour,
+                        popCount: engine.state.organisms.length,
+                        floraCount: engine.state.Flora.length,
+                        events: engine.state.events.slice(0, 5),
+                        apexCandidates: engine.state.apexCandidates,
+                        selectedEntity: null,
+                        hoveredEntity: null,
+                        lastResetTime: engine.state.lastResetTime
+                    }
+                });
+            }
+        } else {
+            extinctionFrameCount = 0;
+        }
+
         // Handle Internal Camera Follow
         if (cameraParams.isFollowing && cameraParams.selectedId) {
             const followed = engine.state.organisms.find(o => o.id === cameraParams.selectedId);
@@ -147,7 +176,8 @@ function tick(time: number) {
                     events: engine.state.events.slice(0, 5),
                     apexCandidates: engine.state.apexCandidates,
                     selectedEntity: selectedEntity,
-                    hoveredEntity: hoveredEntity
+                    hoveredEntity: hoveredEntity,
+                    lastResetTime: engine.state.lastResetTime
                 }
             });
         }

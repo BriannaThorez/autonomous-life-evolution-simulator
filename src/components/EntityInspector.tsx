@@ -1,5 +1,6 @@
 import React from 'react';
-import { OrganismData, FloraData, EntityData, TraitName, SimEvent, Vector2 } from '../../types';
+import { createPortal } from 'react-dom';
+import { OrganismData, FloraData, EntityData, TraitName, SimEvent, Vector2, Memory } from '../../types';
 import { SIM_CONSTANTS, POPULATION_CONSTANTS, UNIT_UTILS } from '../core/Constants';
 import { getSymbol, getSyntax } from '../entities/Fauna/Cognition/SymbolMap';
 import { VectorDB } from '../data/VectorDB';
@@ -20,6 +21,17 @@ interface Props {
 const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, onClose, onOpenMemoryBrowser, onFocus, position, onPositionChange }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const [expandedSection, setExpandedSection] = React.useState<string | null>('traits');
+  const [activeMemoryPopover, setActiveMemoryPopover] = React.useState<null | {
+    key: string;
+    x: number;
+    y: number;
+    title: string;
+    summary: string;
+    names: string[];
+    notes: string[];
+  }>(null);
+  const inspectorRef = React.useRef<HTMLDivElement>(null);
+  const activeMemoryPopoverRef = React.useRef<HTMLDivElement>(null);
 
   // Drawer Toggle Logic
   const toggleSection = (id: string) => setExpandedSection(expandedSection === id ? null : id);
@@ -45,6 +57,43 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
   const framesIntoDay = ageFrames % SIM_CONSTANTS.FRAMES_PER_DAY;
   // 2. Convert those frames into hours (0 - 23)
   const currentHour = Math.floor(framesIntoDay / SIM_CONSTANTS.FRAMES_PER_HOUR);
+
+  const formatGenerationOrdinal = React.useCallback((generation: number) => {
+    const mod100 = generation % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${generation}th gen`;
+
+    const mod10 = generation % 10;
+    if (mod10 === 1) return `${generation}st gen`;
+    if (mod10 === 2) return `${generation}nd gen`;
+    if (mod10 === 3) return `${generation}rd gen`;
+    return `${generation}th gen`;
+  }, []);
+
+  const formatAgeReadout = React.useCallback((frames: number) => {
+    const totalWholeDays = Math.floor(UNIT_UTILS.toDays(frames));
+    const ageYears = Math.floor(totalWholeDays / DAYS_PER_YEAR);
+    const ageDays = totalWholeDays % DAYS_PER_YEAR;
+    const ageHours = Math.floor((frames % SIM_CONSTANTS.FRAMES_PER_DAY) / SIM_CONSTANTS.FRAMES_PER_HOUR);
+    return `${ageHours} Hr ${ageDays} D ${ageYears} Y`;
+  }, [DAYS_PER_YEAR]);
+
+  const lifespanFrames = isFauna ? (((entity as OrganismData).expressedStats as any)?.lifespan ?? 0) : 0;
+  const lifespanRemainingRatio = isFauna && lifespanFrames > 0
+    ? Math.max(0, Math.min(1, 1 - (ageFrames / lifespanFrames)))
+    : 0;
+
+  const nameLines = React.useMemo(() => {
+    const trimmedName = (entity.name || '').trim();
+    if (!trimmedName) return { firstLine: '', secondLine: '' };
+
+    const parts = trimmedName.split(/\s+/);
+    if (parts.length === 1) return { firstLine: parts[0], secondLine: '' };
+
+    return {
+      firstLine: parts[0],
+      secondLine: parts.slice(1).join(' ')
+    };
+  }, [entity.name]);
 
   // Energy Calculation figures
   const stats = isFauna ? (entity as OrganismData).expressedStats : {};
@@ -79,6 +128,31 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
       .sort((a, b) => b.age - a.age)
       .slice(0, 10); // Expanded to 10 for better visibility
   }, [entity.id, (entity as OrganismData).surname, organisms, isFlora]);
+
+  React.useEffect(() => {
+    if (!activeMemoryPopover) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (activeMemoryPopoverRef.current?.contains(target)) return;
+      if (inspectorRef.current?.contains(target)) {
+        const interactive = target instanceof HTMLElement ? target.closest('[data-memory-popover-trigger="true"]') : null;
+        if (interactive) return;
+      }
+      setActiveMemoryPopover(null);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setActiveMemoryPopover(null);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [activeMemoryPopover]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
@@ -116,21 +190,205 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
     communicating_range: { name: "Vocalization", unit: "meter", icon: "🗣️", desc: "Transmission radius for social interactions and data sharing." },
   };
 
-  const getMemorySyntaxStr = (memory: any) => {
+  const getMemorySyntaxStr = (memory: Memory) => {
     const isGroup = (memory.entityIds?.length || 0) > 1;
     return getSyntax(memory.type, memory.content, memory.isFamiliar, isGroup);
   };
 
-  const getGroupNamesTooltip = (memory: any) => {
-    if (!memory.entityIds || memory.entityIds.length === 0) return memory.content;
-    const names = organisms
-      .filter(o => memory.entityIds.includes(o.id))
-      .map(o => o.name);
+  const getMemoryNames = React.useCallback((memory: Memory) => {
+    const names = new Set<string>();
+
+    if (memory.data?.name) names.add(memory.data.name);
+    if (memory.content && !memory.content.startsWith('Ate ')) names.add(memory.content);
+    if (memory.content?.startsWith('Ate ')) names.add(memory.content.replace('Ate ', ''));
+
+    for (const entityId of memory.entityIds || []) {
+      const organism = organisms.find(o => o.id === entityId);
+      if (organism?.name) names.add(organism.name);
+    }
+
+    return Array.from(names).filter(Boolean);
+  }, [organisms]);
+
+  const getGroupNamesTooltip = (memory: Memory) => {
+    const names = getMemoryNames(memory);
     return names.length > 0 ? names.join(', ') : memory.content;
   };
 
+  const getMemoryDetailText = React.useCallback((row: {
+    memory: Memory;
+    stackedCount: number;
+    pinned: boolean;
+    occurrences: number;
+    names: string[];
+    notes: string[];
+  }) => {
+    const { memory, stackedCount, pinned, names, notes } = row;
+    const primaryName = names[0] || memory.content;
+
+    if (memory.type === 'Food') {
+      return `${getMemorySyntaxStr(memory)} I found food at ${stackedCount > 1 ? `${stackedCount} recent locations` : primaryName}.`;
+    }
+
+    if (memory.type === 'Flora') {
+      return `${getMemorySyntaxStr(memory)} I ate ${stackedCount > 1 ? `${stackedCount} nearby food sources recently` : primaryName}.`;
+    }
+
+    if (memory.type === 'Fauna' && memory.isFamiliar) {
+      return `${getMemorySyntaxStr(memory)} I met ${primaryName} again; we are already familiar to one another.`;
+    }
+
+    if (memory.type === 'Fauna' && (memory.entityIds?.length || 0) > 1) {
+      return `${getMemorySyntaxStr(memory)} I encountered a group of fauna, including ${names.slice(0, 3).join(', ')}${names.length > 3 ? ', and others' : ''}.`;
+    }
+
+    if (memory.type === 'Fauna') {
+      return `${getMemorySyntaxStr(memory)} I noticed ${stackedCount > 1 ? `${stackedCount} fauna encounters` : primaryName}.`;
+    }
+
+    if (memory.type === 'THREAT') {
+      return `${getMemorySyntaxStr(memory)} I detected a threat nearby.`;
+    }
+
+    if (memory.type === 'MATE') {
+      return `${getMemorySyntaxStr(memory)} I identified a potential mate.`;
+    }
+
+    if (memory.type === 'SectorScan') {
+      return `${getMemorySyntaxStr(memory)} I completed a scan of the nearby sector.`;
+    }
+
+    return `${getMemorySyntaxStr(memory)} ${notes[0] || memory.content}`;
+  }, []);
+
+  const stackWindowFrames = SIM_CONSTANTS.FRAMES_PER_DAY;
+
+  const isPinnedMemory = React.useCallback((memory: Memory) => {
+    // Keep bonding/familiar social memories pinned until the user chooses the final important-memory set.
+    return memory.type === 'Fauna' && !!memory.isFamiliar;
+  }, []);
+
+  const getStackSignature = React.useCallback((memory: Memory) => {
+    if (isPinnedMemory(memory)) {
+      const entityIdsKey = [...(memory.entityIds || [])].sort().join('|');
+      const targetId = memory.data?.id || '';
+      return ['PINNED', memory.type, targetId, entityIdsKey, memory.isFamiliar ? '1' : '0'].join('::');
+    }
+
+    if (memory.type === 'Food') return 'QUEUE::Food::visible-food';
+    if (memory.type === 'Flora') return 'QUEUE::Flora::consumed-flora';
+    if (memory.type === 'Fauna') {
+      return (memory.entityIds?.length || 0) > 1
+        ? 'QUEUE::Fauna::group-encounter'
+        : 'QUEUE::Fauna::ambient-encounter';
+    }
+
+    if (memory.type === 'SectorScan') return 'QUEUE::SectorScan::scan';
+    if (memory.type === 'THREAT') return 'QUEUE::THREAT::threat';
+    if (memory.type === 'MATE') return 'QUEUE::MATE::mate';
+
+    return `QUEUE::${memory.type}::generic`;
+  }, [isPinnedMemory]);
+
+  const openMemoryPopover = React.useCallback((event: React.MouseEvent<HTMLButtonElement>, row: {
+    key: string;
+    memory: Memory;
+    stackedCount: number;
+    pinned: boolean;
+    occurrences: number;
+    names: string[];
+    notes: string[];
+  }) => {
+    if (row.names.length === 0) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const preferredX = rect.left - 8;
+    const preferredY = rect.bottom + 8;
+    const width = 260;
+    const height = 220;
+
+    setActiveMemoryPopover({
+      key: row.key,
+      x: Math.max(12, Math.min(preferredX, window.innerWidth - width - 12)),
+      y: Math.max(12, Math.min(preferredY, window.innerHeight - height - 12)),
+      title: row.pinned ? 'Pinned Memory Detail' : row.stackedCount > 1 ? 'Stacked Memory Detail' : 'Memory Detail',
+      summary: getMemoryDetailText(row),
+      names: row.names,
+      notes: row.notes,
+    });
+  }, [getMemoryDetailText]);
+
+
+
+  const memoryDisplayRows = React.useMemo(() => {
+    if (!isFauna) return [];
+
+    const rows: Array<{
+      key: string;
+      memory: Memory;
+      occurrences: number;
+      stackedCount: number;
+      pinned: boolean;
+      newestTimestamp: number;
+      names: Set<string>;
+      notes: Set<string>;
+    }> = [];
+
+    const memories = (entity as OrganismData).memories
+      .slice()
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    for (const memory of memories) {
+      const signature = getStackSignature(memory);
+      const stackWindow = stackWindowFrames;
+      const baseCount = Math.max(1, memory.count || 1);
+
+      let matchedRow = null;
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const row = rows[i];
+        if (!row.pinned && row.key === signature && (memory.timestamp - row.newestTimestamp) <= stackWindow) {
+          matchedRow = row;
+          break;
+        }
+      }
+
+      if (matchedRow) {
+        matchedRow.memory = memory;
+        matchedRow.newestTimestamp = memory.timestamp;
+        matchedRow.occurrences += 1;
+        matchedRow.stackedCount += baseCount;
+        for (const name of getMemoryNames(memory)) matchedRow.names.add(name);
+        matchedRow.notes.add(memory.content);
+      } else {
+        rows.push({
+          key: signature,
+          memory,
+          occurrences: 1,
+          stackedCount: baseCount,
+          pinned: isPinnedMemory(memory),
+          newestTimestamp: memory.timestamp,
+          names: new Set(getMemoryNames(memory)),
+          notes: new Set(memory.content ? [memory.content] : []),
+        });
+      }
+    }
+
+    return rows
+      .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        if (a.newestTimestamp !== b.newestTimestamp) return b.newestTimestamp - a.newestTimestamp;
+        return b.stackedCount - a.stackedCount;
+      })
+      .map(row => ({
+        ...row,
+        names: Array.from(row.names),
+        notes: Array.from(row.notes),
+      }));
+  }, [entity, getMemoryNames, getStackSignature, isFauna, isPinnedMemory, stackWindowFrames]);
+
   return (
     <div
+      ref={inspectorRef}
       style={{
         left: `${Math.max(10, Math.min(position.x, window.innerWidth - 300))}px`,
         top: `${Math.max(10, Math.min(position.y, window.innerHeight - 100))}px`,
@@ -159,68 +417,116 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
           style={{ cursor: 'grab' }}
         >
           {/* Entity Observer */}
-          <div className="flex flex-col select-none w-full" style={{ marginRight: '1rem' }}>
-            {/* ANNOTATED SECTION: Organism Name Display */}
-            <Tooltip
-              title="Species Details"
-              content={`Information about ${entity.name}. Carrying a unique genetic blueprint focused on survival and adaptation within the simulation.`}
-              position="right"
-            >
-              <div
-                className="text-[var(--text-xl)] font-bold litho-text relative group"
-                style={{
-                  color: isFlora ? '#A2D5AB' : '#ccde89ff',
-                  lineHeight: '1.2rem',
-                  width: '12rem',
-                  whiteSpace: 'normal',
-                  paddingLeft: '1rem',
-                  textIndent: '-1rem',
-                  marginBottom: '0.5rem',
-                  cursor: 'help',
-                  // Add these for the two-line effect:
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
+          <div className="flex flex-col select-none w-full" style={{ marginRight: '0.75rem', minWidth: 0 }}>
+            <div className="flex items-start justify-between" style={{ gap: '0.45rem', marginBottom: '0.5rem' }}>
+              {/* ANNOTATED SECTION: Organism Name Display */}
+              <Tooltip
+                title="Species Details"
+                content={`Information about ${entity.name}. Carrying a unique genetic blueprint focused on survival and adaptation within the simulation.`}
+                position="right"
               >
-                <span
-                  className="fluid-rounded-full"
+                <div
+                  className="text-[var(--text-xl)] font-bold litho-text relative group"
                   style={{
-                    display: 'inline-block', width: '1rem', height: '0.5rem',
-                    background: entity.color || '#39AEA9', marginRight: '0.5rem',
-                    boxShadow: `0 0 10px ${entity.color || '#39AEA9'}`
+                    color: isFlora ? '#A2D5AB' : '#ccde89ff',
+                    lineHeight: '1.05rem',
+                    flex: 1,
+                    minWidth: 0,
+                    whiteSpace: 'normal',
+                    cursor: 'help',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.5rem'
                   }}
-                />
-                {entity.name}
+                >
+                  <span
+                    className="fluid-rounded-full"
+                    style={{
+                      display: 'inline-block', width: '1rem', height: '0.5rem',
+                      background: entity.color || '#39AEA9', marginTop: '0.22rem', flexShrink: 0,
+                      boxShadow: `0 0 10px ${entity.color || '#39AEA9'}`
+                    }}
+                  />
+                  <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'visible' }}>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'visible', textOverflow: 'clip' }}>{nameLines.firstLine}</span>
+                    {nameLines.secondLine ? (
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'visible', textOverflow: 'clip' }}>{nameLines.secondLine}</span>
+                    ) : null}
+                  </span>
+                </div>
+              </Tooltip>
+              <div className="flex items-center" style={{ gap: '0.35rem', flexShrink: 0 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSection('bio'); }}
+                  className="transition-all juice-interactive fluid-rounded"
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: '#39AEA9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.32rem',
+                    border: '1px solid rgba(57, 174, 169, 0.38)',
+                    background: 'rgba(57, 174, 169, 0.08)',
+                    boxShadow: '0 0 14px rgba(57, 174, 169, 0.14)',
+                    padding: '0.28rem 0.38rem',
+                    textTransform: 'none',
+                    lineHeight: 1
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 7v14" />
+                    <path d="M16 12h2" />
+                    <path d="M16 8h2" />
+                    <path d="M3 18V6a2 2 0 0 1 2-2h7a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z" />
+                    <path d="M16 18a2 2 0 0 1 2-2h3V4h-3a2 2 0 0 0-2 2" />
+                  </svg>
+                  <span>Bio</span>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  className="fluid-rounded transition-all juice-interactive"
+                  style={{
+                    border: '1px solid rgba(57, 174, 169, 0.38)',
+                    background: 'rgba(57, 174, 169, 0.08)',
+                    boxShadow: '0 0 14px rgba(57, 174, 169, 0.14)',
+                    cursor: 'pointer',
+                    color: '#39AEA9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '1.65rem',
+                    height: '1.65rem',
+                    padding: 0,
+                    lineHeight: 1
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
               </div>
-            </Tooltip>
-            {/* Sub-header row: Age (Left) and Bio Toggle (Right) */}
-            <div className="flex items-center justify-between w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}>
-              <div className="opacity-60 font-black" style={{ fontSize: 'var(--text-lg)', color: isFlora ? '#39AEA9' : '#A2D5AB' }}>
-                {isFauna ? `${currentHour} Hours ${daysInCurrentYear} days ${years} years` : 'Biological Organism'}
+            </div>
+            {/* Sub-header row: Age (Left) */}
+            <div className="flex items-start justify-between w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem', gap: '0.6rem' }}>
+
+              <div className="flex flex-col justify-start" style={{ flex: 1, alignSelf: 'stretch', minWidth: 0, gap: '0.24rem' }}>
+                <div className="opacity-60 font-black" style={{ fontSize: 'var(--text-lg)', color: isFlora ? '#39AEA9' : '#A2D5AB', lineHeight: 1, marginTop: 0 }}>
+                  {isFauna ? formatAgeReadout(ageFrames) : 'Biological Organism'}
+                </div>
+                {isFauna && (
+                  <div className="w-full fluid-rounded-full overflow-hidden" style={{ height: '0.26rem', background: 'rgba(255,255,255,0.08)' }}>
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${lifespanRemainingRatio * 100}%`,
+                        background: lifespanRemainingRatio > 0.5 ? '#A2D5AB' : lifespanRemainingRatio > 0.2 ? '#E5EFC1' : '#39AEA9'
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleSection('bio'); }}
-                className="transition-all juice-interactive"
-                style={{
-                  fontSize: 'var(--text-lg)', fontWeight: 600, color: '#39AEA9',
-                  display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', background: 'none'
-                }}
-              >
-                Bio {expandedSection === 'bio' ? '▲' : '▼'}
-              </button>
             </div>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="fluid-p-xs fluid-rounded transition-all"
-            style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
         </div>
-
         {/* 
             PURPOSE: BIOLOGICAL NARRATIVE (Bio)
             Provides a generated backstory or ecological context for the entity.
@@ -270,26 +576,18 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               style={{ border: 'none', background: 'none', cursor: 'pointer' }}
             >
               <div className="flex justify-between items-center w-full">
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col items-start" style={{ minWidth: 0, flex: 1, gap: '0.1rem' }}>
                   <Tooltip
                     title="House Lineage"
                     content="The generational count and house surname of this organism's lineage."
                     position="top"
                   >
-                    <span className="text-[var(--text-xs)] font-black" style={{ color: 'rgba(109, 242, 235, 1)', textTransform: 'uppercase', cursor: 'help' }}>
-                      Generation
+                    <span className="text-[var(--text-xs)] font-black whitespace-nowrap" style={{ color: 'rgba(109, 242, 235, 1)', textTransform: 'uppercase', cursor: 'help' }}>
+                      Lineage
                     </span>
                   </Tooltip>
-                  <span className="text-[var(--text-sm)] font-black whitespace-nowrap" style={{ color: 'rgba(109, 242, 235, 1)', fontFamily: 'monospace' }}>
-                    {(entity as OrganismData).generation}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[var(--text-sm)] font-black" style={{ color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', paddingRight: '0.3rem' }}>
-                    House
-                  </span>
-                  <span className="text-[var(--text-sm)] font-black" style={{ color: '#E5EFC1', fontFamily: 'monospace' }}>
-                    {(entity as OrganismData).surname}
+                  <span className="text-[var(--text-sm)] font-black whitespace-nowrap" style={{ color: '#E5EFC1', fontFamily: 'monospace', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {formatGenerationOrdinal((entity as OrganismData).generation)} | {(entity as OrganismData).surname}
                   </span>
                 </div>
               </div>
@@ -488,6 +786,10 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
         </div>
 
         {/* 
+            AXIOMATIC INTENT: The memories readout is a user-facing interpretation layer, not a raw dump.
+            It must preserve the organism's underlying memory data while compressing rapid repeat noise into queue-like one-day stacks and surfacing consequential events first.
+            AXIOLOGICAL INTENT: Prioritize readability, salience, and ecological storytelling so rare or meaningful memories remain visible during high-update moments.
+            DO NOT REMOVE OR WEAKEN THIS CONTRACT DURING FUTURE GUI REWORKS WITHOUT EXPLICIT USER APPROVAL.
             PURPOSE: NEURAL RECORDS (Memories)
             Short-term (ST) and Long-term (LT) memory lists. ST items use ideographic syntax maps.
         */}
@@ -534,40 +836,79 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
               overflowY: 'scroll',
               paddingRight: '0.3rem'
             }}>
-              {(entity as OrganismData).memories.length > 0 ? (
-                (entity as OrganismData).memories.slice().reverse().map(memory => (
-                  <div
-                    key={memory.id}
-                    className="fluid-p-xxs fluid-rounded flex justify-between items-center group transition-all"
-                    style={{
-                      background: 'rgba(255,255,255,0.01)',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      fontSize: 'var(--text-sm)',
-                      color: 'rgba(255,255,255,0.6)',
-                      height: '1.05rem' // Uniform row height
-                    }}
-                  >
-                    {/* first memory column: lithograph */}
-                    <Tooltip title={(memory.entityIds?.length || 0) > 1 ? "👥 Group" : "Memory"} content={getGroupNamesTooltip(memory)}>
-                      <div className="flex items-center gap-0.5"
+              {memoryDisplayRows.length > 0 ? (
+                memoryDisplayRows.map((row) => {
+                  const { key, memory, stackedCount, pinned, occurrences, names, notes } = row;
+                  const canOpenPopover = stackedCount > 1 && names.length > 0;
+
+                  return (
+                    <div
+                      key={`${key}-${memory.timestamp}`}
+                      className="fluid-p-xxs fluid-rounded flex justify-between items-center group transition-all"
+                      style={{
+                        background: pinned ? 'rgba(57,174,169,0.08)' : 'rgba(255,255,255,0.01)',
+                        border: pinned ? '1px solid rgba(57,174,169,0.28)' : '1px solid rgba(255,255,255,0.05)',
+                        fontSize: 'var(--text-sm)',
+                        color: 'rgba(255,255,255,0.6)',
+                        height: '1.05rem'
+                      }}
+                    >
+                      <button
+                        type="button"
+                        data-memory-popover-trigger="true"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!canOpenPopover && !pinned) return;
+                          openMemoryPopover(event, row);
+                        }}
+                        className="flex items-center gap-0.5"
                         style={{
                           minWidth: 0,
-                        }}>
-                        {/*ideographic Icon section*/}
-                        <span className="whitespace-nowrap litho-text flex-shrink-0 flex items-center justify-center"
+                          border: 'none',
+                          background: 'none',
+                          padding: 0,
+                          cursor: canOpenPopover || pinned ? 'pointer' : 'default',
+                          color: 'inherit',
+                          width: '100%',
+                          justifyContent: 'flex-start'
+                        }}
+                      >
+                        {pinned && (
+                          <span
+                            className="flex-shrink-0 font-black"
+                            style={{ fontSize: '0.45rem', color: '#39AEA9', opacity: 0.95, letterSpacing: '0.08em' }}
+                          >
+                            PIN
+                          </span>
+                        )}
+                        <span
+                          className="whitespace-nowrap litho-text flex-shrink-0 flex items-center justify-center"
                           style={{
-                            fontSize: '1.0rem', // Amplified scale
+                            fontSize: '1.0rem',
                             height: 'auto',
-                            width: 'auto',    // Fixed gutter
+                            width: 'auto',
                             whiteSpace: 'nowrap',
                             justifyContent: 'left',
-                          }}>{getMemorySyntaxStr(memory)}</span> {/* first memory column: lithograph */}
-                      </div>
-                    </Tooltip>
-                    {/* second memory column: age */}
-                    <span className="opacity-20 font-black whitespace-nowrap text-right flex-shrink-0" style={{ fontSize: '0.5rem', width: '3rem' }}>{UNIT_UTILS.toDays(simTime - memory.timestamp).toFixed(1)}d</span>
-                  </div>
-                ))
+                          }}
+                        >{getMemorySyntaxStr(memory)}</span>
+                        {stackedCount > 1 && (
+                          <span
+                            className="flex-shrink-0 font-black"
+                            style={{
+                              fontSize: '0.5rem',
+                              color: pinned ? '#39AEA9' : '#E5EFC1',
+                              opacity: 0.95,
+                              minWidth: '1.25rem'
+                            }}
+                          >
+                            x{stackedCount}
+                          </span>
+                        )}
+                      </button>
+                      <span className="opacity-20 font-black whitespace-nowrap text-right flex-shrink-0" style={{ fontSize: '0.5rem', width: '3rem' }}>{UNIT_UTILS.toDays(simTime - memory.timestamp).toFixed(1)}d</span>
+                    </div>
+                  );
+                })
               ) : (
                 <div className="col-span-2 italic text-center tracking-widest uppercase flex items-center justify-center" style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.1)', height: '100%', minHeight: '5rem' }}>No neural records found</div>
               )}
@@ -576,6 +917,74 @@ const EntityInspector: React.FC<Props> = ({ entity, organisms, events, simTime, 
         )}
 
       </div>
+
+      {activeMemoryPopover && createPortal(
+        <div
+          ref={activeMemoryPopoverRef}
+          className="animate-fade-in"
+          style={{
+            position: 'fixed',
+            top: `${activeMemoryPopover.y}px`,
+            left: `${activeMemoryPopover.x}px`,
+            zIndex: 10001,
+            width: '16rem',
+            maxWidth: 'calc(100vw - 1.5rem)',
+            background: 'rgba(0,0,0,0.96)',
+            border: '1px solid rgba(57, 174, 169, 0.35)',
+            boxShadow: '0 18px 48px rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            borderRadius: '0.4rem',
+            padding: '0.75rem',
+            pointerEvents: 'auto'
+          }}
+        >
+          <div className="flex items-start justify-between" style={{ marginBottom: '0.5rem', gap: '0.5rem' }}>
+            <div>
+              <div className="font-black litho-text uppercase" style={{ color: '#E5EFC1', fontSize: '0.62rem', letterSpacing: '0.12em' }}>
+                {activeMemoryPopover.title}
+              </div>
+              <div style={{ color: '#A2D5AB', opacity: 0.9, fontSize: '0.62rem', lineHeight: 1.5, marginTop: '0.35rem', fontWeight: 800 }}>
+                {activeMemoryPopover.summary}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveMemoryPopover(null)}
+              style={{
+                border: 'none',
+                background: 'none',
+                color: 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 900,
+                lineHeight: 1
+              }}
+            >
+              x
+            </button>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.5rem' }}>
+            <div className="font-black uppercase" style={{ color: '#39AEA9', fontSize: '0.52rem', letterSpacing: '0.12em', marginBottom: '0.25rem' }}>
+              Names
+            </div>
+            <div style={{ color: '#E5EFC1', fontSize: '0.62rem', lineHeight: 1.5, marginBottom: '0.65rem' }}>
+              {activeMemoryPopover.names.join(', ')}
+            </div>
+            <div className="font-black uppercase" style={{ color: '#39AEA9', fontSize: '0.52rem', letterSpacing: '0.12em', marginBottom: '0.25rem' }}>
+              Written Memory
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '7rem', overflowY: 'auto', paddingRight: '0.2rem' }}>
+              {activeMemoryPopover.notes.map((note) => (
+                <div key={note} style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.6rem', lineHeight: 1.45 }}>
+                  {note}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 0.2rem; } 
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
