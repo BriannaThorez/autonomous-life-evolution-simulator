@@ -1,6 +1,7 @@
 const r=`import { FloraData } from '../../../../types';\r
 import { TerrainManager } from '../../../core/TerrainManager';\r
 import { FERN_DNA_PROFILE } from './DNAProfile';\r
+import { SIM_CONSTANTS } from '../../../core/Constants';\r
 \r
 export class FernLogic {\r
     static update(data: FloraData, terrain: TerrainManager) {\r
@@ -29,9 +30,9 @@ export class FernLogic {\r
             data.growthState = Math.min(1.0, data.growthState + finalSpeed);\r
         }\r
 \r
-        // Lifetime decay (Decoupled from growth state)\r
+        // Lifetime decay is intentionally hourly so plant persistence matches the configured day-based DNA.\r
         if (data.lifetime !== undefined) {\r
-            data.lifetime--;\r
+            data.lifetime = Math.max(0, data.lifetime - SIM_CONSTANTS.FRAMES_PER_HOUR);\r
         }\r
     }\r
 }\r

@@ -13,7 +13,8 @@ export class Fauna {\r
 \r
     public update(time: number, worldSize: Vector2, terrain: any, popStats: any) {\r
         // 1. Metabolism\r
-        const loss = Metabolism.calculateEnergyLoss(this.data.expressedStats);\r
+        const currentSpeedMps = UNIT_UTILS.toDisplaySpeed(Math.sqrt(this.data.velocity.x ** 2 + this.data.velocity.y ** 2));\r
+        const loss = Metabolism.calculateEnergyLoss(this.data.expressedStats, currentSpeedMps);\r
         this.data.energy -= loss;\r
         this.data.age++;\r
 \r

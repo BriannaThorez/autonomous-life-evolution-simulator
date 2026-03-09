@@ -3,6 +3,7 @@ import { VectorMath } from '../../../core/VectorMath';\r
 import { UNIT_UTILS, SIM_CONSTANTS, SENSORY_CONSTANTS, POPULATION_CONSTANTS } from '../../../core/Constants';\r
 import { SensorSystem, SensoryInput } from './SensorSystem';\r
 import { MemorySystem } from './MemorySystem';\r
+import { Metabolism } from '../Metabolism';\r
 \r
 export class Brain {\r
     private me: OrganismData;\r
@@ -94,6 +95,12 @@ export class Brain {\r
 \r
         // 5. Decision Making: Hunger vs Mating vs Wandering\r
         let steering: Vector2 = { x: 0, y: 0 };\r
+        const maxSpeed = UNIT_UTILS.toInternalSpeed(this.me.expressedStats.speed);\r
+        const currentSpeedMps = UNIT_UTILS.toDisplaySpeed(Math.sqrt(this.me.velocity.x ** 2 + this.me.velocity.y ** 2));\r
+        const maxFrameBurn = Metabolism.calculateEnergyLoss(this.me.expressedStats, this.me.expressedStats.speed);\r
+        const reserveEnergy = Math.max(2200, maxFrameBurn * SIM_CONSTANTS.FRAMES_PER_DAY * 1.25);\r
+        const hasEnergySurplus = this.me.energy > reserveEnergy;\r
+        const isEnergyStressed = this.me.energy < reserveEnergy * 0.7;\r
 \r
         let bestTarget: Vector2 | null = null;\r
         let maxScore = -1;\r
@@ -148,7 +155,7 @@ export class Brain {\r
                     return { x: 0, y: 0 };\r
                 }\r
 \r
-                let desiredSpeed = UNIT_UTILS.toInternalSpeed(this.me.expressedStats.speed);\r
+                let desiredSpeed = maxSpeed * (isEnergyStressed ? 1.0 : 0.78);\r
 \r
                 if (dist < slowRadius) {\r
                     desiredSpeed *= (dist / slowRadius);\r
@@ -159,23 +166,28 @@ export class Brain {\r
                 steering = VectorMath.sub(targetVel, this.me.velocity);\r
             }\r
         } else {\r
-            const noiseTime = time * 0.005;\r
-            const seed = parseInt(this.me.id) || 0;\r
+            if (hasEnergySurplus) {\r
+                const noiseTime = time * 0.005;\r
+                const seed = parseInt(this.me.id) || 0;\r
 \r
-            const noiseX = Math.sin(noiseTime + seed) + Math.sin(noiseTime * 0.5 + seed);\r
-            const noiseY = Math.cos(noiseTime + seed) + Math.cos(noiseTime * 0.5 + seed);\r
+                const noiseX = Math.sin(noiseTime + seed) + Math.sin(noiseTime * 0.5 + seed);\r
+                const noiseY = Math.cos(noiseTime + seed) + Math.cos(noiseTime * 0.5 + seed);\r
 \r
-            const wanderVec = VectorMath.normalize({ x: noiseX, y: noiseY });\r
-            const wanderSpeed = UNIT_UTILS.toInternalSpeed(this.me.expressedStats.speed) * 0.4;\r
+                const wanderVec = VectorMath.normalize({ x: noiseX, y: noiseY });\r
+                const wanderSpeed = maxSpeed * (this.me.energy > reserveEnergy * 1.75 ? 0.38 : 0.24);\r
 \r
-            const currentSpeed = Math.sqrt(this.me.velocity.x ** 2 + this.me.velocity.y ** 2);\r
-            let impulse = { x: 0, y: 0 };\r
-            if (currentSpeed < 0.05) {\r
-                impulse = { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 };\r
+                const currentSpeed = Math.sqrt(this.me.velocity.x ** 2 + this.me.velocity.y ** 2);\r
+                let impulse = { x: 0, y: 0 };\r
+                if (currentSpeed < 0.03) {\r
+                    impulse = { x: (Math.random() - 0.5) * 2.5, y: (Math.random() - 0.5) * 2.5 };\r
+                }\r
+\r
+                const desired = VectorMath.add(VectorMath.mul(wanderVec, wanderSpeed), impulse);\r
+                steering = VectorMath.sub(desired, this.me.velocity);\r
+            } else {\r
+                // Preserve energy when there is no urgent objective.\r
+                steering = VectorMath.mul(this.me.velocity, -0.18);\r
             }\r
-\r
-            const desired = VectorMath.add(VectorMath.mul(wanderVec, wanderSpeed), impulse);\r
-            steering = VectorMath.sub(desired, this.me.velocity);\r
         }\r
 \r
         // 6. Mating Logic\r
@@ -195,8 +207,7 @@ export class Brain {\r
                     return { x: 0, y: 0 };\r
                 } else {\r
                     const desired = VectorMath.normalize(VectorMath.sub(potentialMate.position, this.me.position));\r
-                    const maxSpeed = UNIT_UTILS.toInternalSpeed(this.me.expressedStats.speed);\r
-                    const targetVel = VectorMath.mul(desired, maxSpeed);\r
+                    const targetVel = VectorMath.mul(desired, maxSpeed * (isEnergyStressed ? 0.92 : 0.75));\r
                     steering = VectorMath.add(steering, VectorMath.sub(targetVel, this.me.velocity));\r
                 }\r
             }\r

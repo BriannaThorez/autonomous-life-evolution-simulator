@@ -3,11 +3,11 @@ import { SIM_CONSTANTS } from '../../../core/Constants';\r
 \r
 export const FERN_DNA_PROFILE = {\r
     // --- TEMPORAL CALIBRATION ---\r
-    MATURATION_DAYS_ESTIMATE: 3,\r
+    MATURATION_DAYS_ESTIMATE: 2.5,\r
 \r
     // --- GENETIC RANGE MAPPINGS ---\r
     TRAIT_RANGES: {\r
-        growth_speed_ratio: [0.8, 1.2],\r
+        growth_speed_ratio: [0.9, 1.3],\r
         complexity: [2.0, 12.0],\r
         stem_thickness: [0.5, 3.5],\r
         leaf_size: [10.0, 50.0],\r
@@ -18,23 +18,23 @@ export const FERN_DNA_PROFILE = {\r
 \r
     // --- ECOLOGY (Growth & Spreading) ---\r
     ECOLOGY: {\r
-        HOURLY_RANDOM_SPAWN_CHANCE: 0.75,\r
+        HOURLY_RANDOM_SPAWN_CHANCE: 0.9,\r
         BIOME_GRASS_GROWTH: 1.5,\r
         BIOME_ARID_GROWTH: 0.1,\r
-        PROXIMITY_DENSITY_BONUS: 3.5,\r
+        PROXIMITY_DENSITY_BONUS: 1.65,\r
         CLUSTER_SEARCH_RADIUS_METERS: 1.2,\r
         CLUSTER_MIN_NEIGHBORS: 2,\r
         CLUSTER_MAX_NEIGHBORS: 5,\r
-        CLUSTER_GROWTH_RATE: 0.55,\r
+        CLUSTER_GROWTH_RATE: 0.42,\r
         CLUSTER_SPAWN_DISTANCE_MIN: 0.1,\r
         CLUSTER_SPAWN_DISTANCE_MAX: 0.5,\r
     },\r
 \r
     // --- THERMODYNAMICS ---\r
     THERMODYNAMICS: {\r
-        NUTRIENT_BASE_MIN: 150,\r
-        MASS_TO_ENERGY_SCALAR: 350.0,\r
-        GROWTH_MASS_PENALTY: 0.10,\r
+        NUTRIENT_BASE_MIN: 320,\r
+        MASS_TO_ENERGY_SCALAR: 420.0,\r
+        GROWTH_MASS_PENALTY: 0.012,\r
     },\r
 \r
     // --- FACTORY: GENOME BUILDER ---\r
@@ -56,9 +56,10 @@ export const FERN_DNA_PROFILE = {\r
         const massPenalty = 1.0 + (mass * FERN_DNA_PROFILE.THERMODYNAMICS.GROWTH_MASS_PENALTY);\r
         const finalGrowthRatio = rawGrowthRatio / massPenalty;\r
 \r
-        const hoursPerSeason = SIM_CONSTANTS.FRAMES_PER_SEASON / SIM_CONSTANTS.FRAMES_PER_HOUR;\r
-        const hoursToMaturity = hoursPerSeason / finalGrowthRatio;\r
-        const hourlySpeed = Math.max(0.00001, 1.0 / hoursToMaturity);\r
+        const baseHoursToMaturity = FERN_DNA_PROFILE.MATURATION_DAYS_ESTIMATE * SIM_CONSTANTS.HOURS_PER_DAY;\r
+        const clampedGrowthRatio = Math.max(0.45, finalGrowthRatio);\r
+        const hoursToMaturity = baseHoursToMaturity / clampedGrowthRatio;\r
+        const hourlySpeed = Math.max(0.0005, 1.0 / hoursToMaturity);\r
 \r
         const nutrients = Math.max(FERN_DNA_PROFILE.THERMODYNAMICS.NUTRIENT_BASE_MIN, mass * FERN_DNA_PROFILE.THERMODYNAMICS.MASS_TO_ENERGY_SCALAR);\r
 \r

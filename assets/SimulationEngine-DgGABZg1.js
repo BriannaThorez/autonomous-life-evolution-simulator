@@ -214,7 +214,7 @@ export class SimulationEngine {\r
     const flora = Flora.create(Math.random().toString(36).substr(2, 9), finalPos, 0, 0, type, 'Fern', FERN_DNA_PROFILE.generateGenome);\r
 \r
     if (initialGrowth !== undefined) {\r
-      flora.data.growthState = initialGrowth;\r
+      flora.data.growthState = Math.max(0.3, initialGrowth);\r
     }\r
 \r
     flora.data.biome = this.terrain.getBiomeAt(finalPos.x, finalPos.y);\r
@@ -382,7 +382,7 @@ export class SimulationEngine {\r
         { organisms: orgNeighbors, flora: floraNeighbors },\r
         {\r
           onEat: (f) => {\r
-            orgData.energy += f.energyValue * f.growthState;\r
+            orgData.energy += f.energyValue * Math.max(0.35, f.growthState);\r
             const idx = this.state.Flora.findIndex(flora => flora.id === f.id);\r
             if (idx !== -1) {\r
               this.state.Flora.splice(idx, 1);\r
@@ -421,10 +421,7 @@ export class SimulationEngine {\r
     });\r
 \r
     const initialFloraLen = this.state.Flora.length;\r
-    this.state.Flora = this.state.Flora.filter(f => {\r
-      if (f.lifetime !== undefined) { f.lifetime--; return f.lifetime > 0; }\r
-      return true;\r
-    });\r
+    this.state.Flora = this.state.Flora.filter(f => f.lifetime === undefined || f.lifetime > 0);\r
     if (this.state.Flora.length !== initialFloraLen) this.floraGridDirty = true;\r
   }\r
 }\r
